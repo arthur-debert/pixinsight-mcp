@@ -343,7 +343,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
         P.targets=[[true,true,'${tmpTgt.replace(/'/g, "\\'")}']];
         P.outputDirectory='${tmpDir.replace(/'/g, "\\'")}';P.outputPrefix='aligned_';P.outputPostfix='';
         P.overwriteExistingFiles=true;P.onError=StarAlignment.Continue;
-        P.useTriangles=true;P.polygonSides=5;P.sensitivity=0.50;P.noGUIMessages=true;
+        P.useTriangles=true;P.polygonSides=5;P.sensitivity=0.50;
         P.distortionCorrection=false;P.generateDrizzleData=false;
         P.executeGlobal();
       `);
@@ -430,8 +430,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   log('  BXT correct...');
   await pjsrOrDie(`
     var P=new BlurXTerminator;
-    P.correct_only=true;P.adjust_star_halos=0.00;
-    P.AI_file='';P.device=0;
+    P.correct_only=true;P.adjust_halos=0.00;
     P.executeOn(ImageWindow.windowById('${targetName}').mainView);
   `, 'BXT correct on RGB');
 
@@ -548,8 +547,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   log('  BXT sharpen (nonstellar=0.70)...');
   await pjsrOrDie(`
     var P=new BlurXTerminator;
-    P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_star_halos=0.00;
-    P.AI_file='';P.device=0;
+    P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_halos=0.00;
     P.executeOn(ImageWindow.windowById('${targetName}').mainView);
   `, 'BXT sharpen on RGB');
 
@@ -558,7 +556,6 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   await pjsrOrDie(`
     var P=new StarXTerminator;
     P.stars=true;P.unscreen=false;P.overlap=0.20;
-    P.AI_file='';P.device=0;
     P.executeOn(ImageWindow.windowById('${targetName}').mainView);
   `, 'SXT on RGB');
   // Find star image
@@ -612,8 +609,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     log('  BXT correct on L...');
     await pjsrOrDie(`
       var P=new BlurXTerminator;
-      P.correct_only=true;P.adjust_star_halos=0.00;P.AI_file='';P.device=0;
-      P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
+      P.correct_only=true;P.adjust_halos=0.00;P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
     `, 'BXT correct on L');
 
     // NXT linear on L (balanced)
@@ -628,16 +624,14 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     log('  BXT sharpen on L (nonstellar=0.70)...');
     await pjsrOrDie(`
       var P=new BlurXTerminator;
-      P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_star_halos=0.00;P.AI_file='';P.device=0;
-      P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
+      P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_halos=0.00;P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
     `, 'BXT sharpen on L');
 
     // SXT on L (starless)
     log('  SXT on L (linear, starless)...');
     await pjsrOrDie(`
       var P=new StarXTerminator;
-      P.stars=true;P.unscreen=false;P.overlap=0.20;P.AI_file='';P.device=0;
-      P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
+      P.stars=true;P.unscreen=false;P.overlap=0.20;P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
     `, 'SXT on L');
     // Close L stars (we only use RGB stars)
     const postLSxt = await ctx.listImages();
@@ -711,8 +705,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
       log('  SXT on Ha (non-linear, unscreen)...');
       await pjsrOrDie(`
         var P=new StarXTerminator;
-        P.stars=true;P.unscreen=true;P.overlap=0.20;P.AI_file='';P.device=0;
-        P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
+        P.stars=true;P.unscreen=true;P.overlap=0.20;P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
       `, 'SXT on Ha');
       const postHaSxt = await ctx.listImages();
       const haStars = postHaSxt.find(i => i.id.includes('FILTER_Ha') && i.id.includes('stars'));
@@ -732,8 +725,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
       log('  BXT correct on Ha...');
       await pjsrOrDie(`
         var P=new BlurXTerminator;
-        P.correct_only=true;P.adjust_star_halos=0.00;P.AI_file='';P.device=0;
-        P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
+        P.correct_only=true;P.adjust_halos=0.00;P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
       `, 'BXT correct on Ha');
 
       log('  NXT linear on Ha (0.20)...');
@@ -746,15 +738,13 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
       log('  BXT sharpen on Ha (nonstellar=0.70)...');
       await pjsrOrDie(`
         var P=new BlurXTerminator;
-        P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_star_halos=0.00;P.AI_file='';P.device=0;
-        P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
+        P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_halos=0.00;P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
       `, 'BXT sharpen on Ha');
 
       log('  SXT on Ha (linear)...');
       await pjsrOrDie(`
         var P=new StarXTerminator;
-        P.stars=true;P.unscreen=false;P.overlap=0.20;P.AI_file='';P.device=0;
-        P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
+        P.stars=true;P.unscreen=false;P.overlap=0.20;P.executeOn(ImageWindow.windowById('FILTER_Ha').mainView);
       `, 'SXT on Ha');
       const postHaSxt = await ctx.listImages();
       const haStars = postHaSxt.find(i => i.id.includes('FILTER_Ha') && i.id.includes('stars'));

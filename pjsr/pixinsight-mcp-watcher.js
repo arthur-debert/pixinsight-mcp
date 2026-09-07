@@ -466,11 +466,14 @@ function handleDeconvolve(command) {
 
 function handleCombineLRGB(command) {
    var P = new LRGBCombination;
-   P.channelL = [true, command.parameters.luminanceViewId];
-   P.channelR = [false, ""];
-   P.channelG = [false, ""];
-   P.channelB = [false, ""];
-   P.luminanceWeight = command.parameters.luminanceWeight || 1.0;
+   // One `channels` array of [enabled, viewId, weight], ordered L, R, G, B.
+   // Only L is supplied; the RGB channels come from the target view itself.
+   P.channels = [
+      [true,  command.parameters.luminanceViewId, command.parameters.luminanceWeight || 1.0],
+      [false, "", 1],
+      [false, "", 1],
+      [false, "", 1]
+   ];
 
    // Execute on the RGB image
    var view = findViewById(command.targetView);

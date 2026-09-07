@@ -104,7 +104,7 @@ export class RGBCleanlinessAgent extends BaseAgent {
       P.correct_only = true;
       P.sharpen_stars = 0.50;
       P.sharpen_nonstellar = ${params.bxt_sharpenNonstellar};
-      P.adjust_star_halos = 0.00;
+      P.adjust_halos = 0.00;
       P.auto_nonstellar_psf = true;
       P.executeOn(ImageWindow.windowById('${viewId}').mainView);
     `);

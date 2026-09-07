@@ -421,11 +421,10 @@ const TOOL_CATALOG = {
       const correctOnly = input.correct_only ? 'true' : 'false';
       await ctx.pjsr(`
         var P = new BlurXTerminator;
-        P.AI = true;
         P.correct_only = ${correctOnly};
         ${!input.correct_only ? `P.nonstellar_then_stellar = true;
         P.sharpen_nonstellar = ${input.sharpen_nonstellar ?? 0.50};
-        P.sharpen_stellar = ${input.sharpen_stellar ?? 0.50};` : ''}
+        P.sharpen_stars = ${input.sharpen_stellar ?? 0.50};` : ''}
         P.adjust_halos = ${input.adjust_star_halos ?? 0.0};
         P.executeOn(ImageWindow.windowById('${input.view_id}').mainView);
       `);
@@ -634,7 +633,7 @@ const TOOL_CATALOG = {
         P.generateGraphs = false;
         P.generateStarMaps = false;
         P.generateTextFiles = false;
-        P.backgroundNeutralizationEnabled = true;
+        P.neutralizeBackground = true;
         P.psfStructureLayers = 5;
         P.psfMinSNR = 10;
         P.psfAllowClusteredSources = true;
@@ -887,7 +886,6 @@ const TOOL_CATALOG = {
         ];
         P.scalingFunctionRowFilter = [0.0625,0.25,0.375,0.25,0.0625];
         P.scalingFunctionColFilter = [0.0625,0.25,0.375,0.25,0.0625];
-        P.scalingFunctionNoiseLayers = 1;
         P.scalingFunctionName = "B3 Spline (5)";
         P.deringing = true;
         P.smallScaleDeringing = 0.000;
@@ -1444,8 +1442,7 @@ const TOOL_CATALOG = {
       const tgt = input.rgb_id;
       await ctx.pjsr(`
         var CE = new ChannelExtraction;
-        CE.channelEnabled = [true, true, true];
-        CE.channelId = ['${tgt}_R', '${tgt}_G', '${tgt}_B'];
+        CE.channels = [[true, '${tgt}_R'], [true, '${tgt}_G'], [true, '${tgt}_B']];
         CE.colorSpace = ChannelExtraction.RGB;
         CE.sampleFormat = ChannelExtraction.SameAsSource;
         CE.executeOn(ImageWindow.windowById('${tgt}').mainView);
@@ -1468,12 +1465,10 @@ const TOOL_CATALOG = {
 
       const r = await ctx.pjsr(`
         var P = new LRGBCombination;
-        P.channelL = [true, '${tgt}_L'];
-        P.channelR = [true, '${tgt}_R'];
-        P.channelG = [true, '${tgt}_G'];
-        P.channelB = [true, '${tgt}_B'];
-        P.lightness = ${lightness};
-        P.saturation = ${saturation};
+        P.channels = [[true, '${tgt}_L', 1], [true, '${tgt}_R', 1],
+                      [true, '${tgt}_G', 1], [true, '${tgt}_B', 1]];
+        P.mL = ${lightness};
+        P.mc = ${saturation};
         P.noiseReduction = false;
         var ret = P.executeOn(ImageWindow.windowById('${tgt}').mainView);
         ret ? 'LRGB_OK' : 'LRGB_FAILED';
@@ -2428,7 +2423,6 @@ const TOOL_CATALOG = {
         P.polygonSides = 5;
         P.useBrightnessRelations = true;
         P.sensitivity = 0.50;
-        P.noGUIMessages = true;
         P.distortionCorrection = false;
         P.generateDrizzleData = false;
         var ok = P.executeGlobal();

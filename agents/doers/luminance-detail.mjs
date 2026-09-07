@@ -140,11 +140,8 @@ export class LuminanceDetailAgent extends BaseAgent {
         ];
         P.scalingFunctionRowFilter = [0.0625,0.25,0.375,0.25,0.0625];
         P.scalingFunctionColFilter = [0.0625,0.25,0.375,0.25,0.0625];
-        P.scalingFunctionNoiseLayers = 0;
         P.scalingFunctionName = "B3 Spline (5)";
-        P.largeScaleFunction = HDRMultiscaleTransform.MultiscaleMedianTransform;
-        P.curveBreakPoint = 0.75;
-        P.noiseReduction = true;
+        P.medianTransform = true;
         P.deringing = true;
         P.toLightness = true;
         P.preserveHue = true;

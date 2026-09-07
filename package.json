@@ -9,7 +9,8 @@
     "doctor": "node scripts/pi-doctor.mjs",
     "launch": "node scripts/pi-launch.mjs",
     "lint:pjsr": "node scripts/pjsr-lint.mjs",
-    "setup-bridge": "mkdir -p ~/.pixinsight-mcp/bridge/{commands,results,logs} ~/.pixinsight-mcp/catalog/recipes"
+    "setup-bridge": "mkdir -p ~/.pixinsight-mcp/bridge/{commands,results,logs} ~/.pixinsight-mcp/catalog/recipes",
+    "audit:params": "node scripts/pjsr-audit-params.mjs"
   },
   "keywords": [
     "pixinsight",

@@ -37,7 +37,6 @@ export async function runABE(ctx, viewId, opts = {}) {
     P.minBoxFraction = 0.050;
     P.maxBackground = 1.0000;
     P.minBackground = 0.0000;
-    P.useBezierSurface = false;
     P.polyDegree = ${polyDegree};
     P.boxSize = 5;
     P.boxSeparation = ${boxSeparation};
@@ -51,7 +50,6 @@ export async function runABE(ctx, viewId, opts = {}) {
     P.replaceTarget = true;
     P.correctedImageId = '';
     P.correctedImageSampleFormat = AutomaticBackgroundExtractor.CorrectedFormat_SameAsTarget;
-    P.verbosity = 0;
     P.executeOn(ImageWindow.windowById('${viewId}').mainView);
   `);
   if (r.status === 'error') ctx.log('  [ABE] WARN: ' + r.error?.message);
@@ -80,8 +78,7 @@ export async function runPerChannelABE(ctx, viewId, opts = {}) {
 
     // Extract channels
     var CE = new ChannelExtraction;
-    CE.channelEnabled = [true, true, true];
-    CE.channelId = ['__pca_R', '__pca_G', '__pca_B'];
+    CE.channels = [[true, '__pca_R'], [true, '__pca_G'], [true, '__pca_B']];
     CE.colorSpace = ChannelExtraction.RGB;
     CE.sampleFormat = ChannelExtraction.SameAsSource;
     CE.executeOn(tgt.mainView);
@@ -102,7 +99,6 @@ export async function runPerChannelABE(ctx, viewId, opts = {}) {
       P.normalize = true;
       P.discardModel = true;
       P.replaceTarget = true;
-      P.verbosity = 0;
       P.executeOn(cw.mainView);
       CoreApplication.processEvents();
     }
