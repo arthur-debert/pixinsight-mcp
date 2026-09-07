@@ -75,6 +75,28 @@ export async function plateSolve(ctx, viewId, opts = {}) {
     online = false,
   } = opts;
 
+  // A dense field — a globular cluster above all — gives the solver thousands of
+  // blended, clustered sources. Fitting a distortion spline through those
+  // produces degenerate correspondences and the solve dies on
+  // "Matrix.inverse(): Singular matrix". Dropping to a linear solution recovers
+  // it, at the cost of not modelling optical distortion, which SPCC does not
+  // need. So: try with distortion correction, and fall back without it.
+  const first = await attemptSolve(ctx, viewId, { focalLengthMm, pixelSizeUm, catalog, magnitude, online,
+                                                 distortionCorrection: true });
+  if (first.solved || !/[Ss]ingular matrix|Matrix\.inverse/.test(first.detail ?? '')) {
+    return first;
+  }
+
+  const second = await attemptSolve(ctx, viewId, { focalLengthMm, pixelSizeUm, catalog, magnitude, online,
+                                                   distortionCorrection: false });
+  return second.solved
+    ? { ...second, detail: `${second.detail} (linear solution; the distortion fit was singular on this field)` }
+    : { ...second, detail: `${second.detail} — and the distortion fit was singular before that` };
+}
+
+async function attemptSolve(ctx, viewId, opts) {
+  const { focalLengthMm, pixelSizeUm, catalog, magnitude, online, distortionCorrection } = opts;
+
   const overrides = [];
   if (focalLengthMm) {
     overrides.push(`engine.metadata.focal = ${focalLengthMm};`);
@@ -105,7 +127,7 @@ export async function plateSolve(ctx, viewId, opts = {}) {
               : online ? 'CatalogMode.Online'
                        : 'CatalogMode.Automatic'};
     ${catalog ? `engine.solverCfg.catalog = '${catalog}';` : ''}
-    engine.solverCfg.distortionCorrection = true;
+    engine.solverCfg.distortionCorrection = ${distortionCorrection};
     // Nothing is watching a dialog here, and the star overlays would leave
     // stray windows open in the middle of a pipeline.
     engine.solverCfg.showStars = false;
