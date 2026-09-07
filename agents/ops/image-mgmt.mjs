@@ -13,10 +13,12 @@
  */
 export function toViewId(name, fallback = 'Target') {
   const cleaned = String(name ?? '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // strip accents
-    .replace(/[^A-Za-z0-9_]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  if (!cleaned) return fallback;
+    .trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // fold accents
+    .replace(/[^A-Za-z0-9_]+/g, '_');
+  // Underscores are legal and meaningful — "_stars" is a name this pipeline
+  // uses — so only a result with nothing else in it falls back.
+  if (!cleaned || /^_+$/.test(cleaned)) return fallback;
   return /^[0-9]/.test(cleaned) ? '_' + cleaned : cleaned;
 }
 

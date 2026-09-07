@@ -63,13 +63,85 @@ export const WEIGHT_PROFILES = {
     artifact_penalty: 0.25,
     aesthetic_coherence: 0.95
   },
-  star_cluster: {
+  galaxy_elliptical: {
+    // A smooth profile with no structure to resolve: the work is the faint
+    // outer halo, which lives or dies on background quality and tonal roll-off.
+    detail_credibility: 0.55,
+    background_quality: 0.95,
+    color_naturalness: 0.65,
+    star_integrity: 0.50,
+    tonal_balance: 1.0,
+    subject_separation: 0.75,
+    artifact_penalty: 0.20,
+    aesthetic_coherence: 0.70
+  },
+  galaxy_cluster: {
+    // Dozens of small diverse galaxies against a star field. Telling them apart
+    // from stars is the whole picture.
+    detail_credibility: 1.0,
+    background_quality: 0.90,
+    color_naturalness: 0.80,
+    star_integrity: 0.70,
+    tonal_balance: 0.60,
+    subject_separation: 0.95,
+    artifact_penalty: 0.25,
+    aesthetic_coherence: 0.60
+  },
+  planetary_nebula: {
+    // Small, bright, high dynamic range: shells and knots against a burnt core.
+    detail_credibility: 0.95,
+    background_quality: 0.70,
+    color_naturalness: 0.90,
+    star_integrity: 0.60,
+    tonal_balance: 1.0,
+    subject_separation: 0.85,
+    artifact_penalty: 0.25,
+    aesthetic_coherence: 0.75
+  },
+  dark_nebula: {
+    // A silhouette. There is no subject to sharpen, only the field it occludes,
+    // so background quality and tonal separation carry it.
+    detail_credibility: 0.55,
+    background_quality: 1.0,
+    color_naturalness: 0.70,
+    star_integrity: 0.85,
+    tonal_balance: 0.95,
+    subject_separation: 0.90,
+    artifact_penalty: 0.25,
+    aesthetic_coherence: 0.75
+  },
+  supernova_remnant: {
+    // Filaments, and filaments are exactly what over-sharpening invents.
+    detail_credibility: 1.0,
+    background_quality: 0.80,
+    color_naturalness: 0.85,
+    star_integrity: 0.60,
+    tonal_balance: 0.70,
+    subject_separation: 0.90,
+    artifact_penalty: 0.30,
+    aesthetic_coherence: 0.75
+  },
+  star_cluster_globular: {
+    // The stars are the subject. A resolved core and diverse star colour are
+    // the picture; there is nothing else in the frame to get right.
     detail_credibility: 0.60,
     background_quality: 0.85,
     color_naturalness: 0.80,
     star_integrity: 1.0,
     tonal_balance: 0.70,
     subject_separation: 0.50,
+    artifact_penalty: 0.20,
+    aesthetic_coherence: 0.75
+  },
+  star_cluster_open: {
+    // Also stars, but scattered rather than concentrated: colour diversity
+    // matters more than resolving a core, and the background is most of the frame.
+    detail_credibility: 0.50,
+    background_quality: 0.90,
+    color_naturalness: 0.95,
+    star_integrity: 1.0,
+    tonal_balance: 0.65,
+    subject_separation: 0.45,
     artifact_penalty: 0.20,
     aesthetic_coherence: 0.75
   },
@@ -138,7 +210,15 @@ export function checkHardConstraints(stats, brief) {
  * @returns {{ aggregate: number, weighted: object }}
  */
 export function computeAggregate(scores, targetClass = 'mixed_field') {
-  const weights = WEIGHT_PROFILES[targetClass] || WEIGHT_PROFILES.mixed_field;
+  // Falling back silently is how a globular cluster gets scored on the generic
+  // profile: the weights are the only place the pipeline states what a target
+  // type is FOR, so an unrecognised one has to be visible.
+  const weights = WEIGHT_PROFILES[targetClass];
+  if (!weights) {
+    throw new Error(
+      `No scoring weight profile for "${targetClass}". ` +
+      `Known profiles: ${Object.keys(WEIGHT_PROFILES).join(', ')}.`);
+  }
 
   // Normalize positive weights (excluding artifact_penalty)
   const positiveDims = DIMENSIONS.filter(d => d !== 'artifact_penalty');

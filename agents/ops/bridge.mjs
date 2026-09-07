@@ -64,8 +64,13 @@ function readHeartbeat(heartbeatPath) {
  * has four very different causes and only one of them is worth retrying, so the
  * caller needs to be told which one it hit.
  */
-export function watcherStatus(heartbeatPath = DEFAULT_HEARTBEAT) {
-  const running = isPixInsightRunning();
+export function watcherStatus(options = DEFAULT_HEARTBEAT) {
+  // A bare path keeps the common call site short; the object form lets a test
+  // state whether the application is running instead of asking the machine.
+  const { heartbeatPath = DEFAULT_HEARTBEAT, running: runningOverride, now = Date.now() } =
+    typeof options === 'string' ? { heartbeatPath: options } : options;
+
+  const running = runningOverride ?? isPixInsightRunning();
   const hb = readHeartbeat(heartbeatPath);
 
   if (!hb) {
@@ -76,7 +81,7 @@ export function watcherStatus(heartbeatPath = DEFAULT_HEARTBEAT) {
           detail: 'PixInsight is not running. Start it with: node scripts/pi-launch.mjs' };
   }
 
-  const age = Date.now() - Date.parse(hb.timestamp);
+  const age = now - Date.parse(hb.timestamp);
   if (!running) {
     return { ok: false, reason: 'crashed', heartbeat: hb,
              detail: `PixInsight crashed about ${Math.round(age / 1000)}s ago, while ${hb.state === 'busy' ? `running ${hb.currentCommand?.tool}` : 'idle'}.` };

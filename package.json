@@ -10,7 +10,9 @@
     "launch": "node scripts/pi-launch.mjs",
     "lint:pjsr": "node scripts/pjsr-lint.mjs",
     "setup-bridge": "mkdir -p ~/.pixinsight-mcp/bridge/{commands,results,logs} ~/.pixinsight-mcp/catalog/recipes",
-    "audit:params": "node scripts/pjsr-audit-params.mjs"
+    "audit:params": "node scripts/pjsr-audit-params.mjs",
+    "test": "node --test test/",
+    "lint:imports": "node scripts/check-imports.mjs"
   },
   "keywords": [
     "pixinsight",
