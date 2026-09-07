@@ -4,3 +4,8 @@ dist/
 *.js.map
 .env
 .DS_Store
+
+# Pipeline configs naming local master frames. Every path in them is absolute
+# and machine-specific, so they belong to a working copy, not to the repo.
+# Test data, if it ever lands here, gets vendored with relative paths instead.
+configs/
