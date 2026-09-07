@@ -226,7 +226,7 @@ async function run() {
   if (imgs.length > 0) {
     log('Closing ' + imgs.length + ' open images...');
     const ids = imgs.map(i => "'" + i.id + "'").join(',');
-    await pjsr(`var ids=[${ids}]; for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();processEvents();}`);
+    await pjsr(`var ids=[${ids}]; for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();CoreApplication.processEvents();}`);
   }
 
   log('Opening L, R, V(G), B, Ha...');
@@ -277,7 +277,7 @@ async function run() {
     P.expression='${idR}'; P.expression1='${idG}'; P.expression2='${idB}';
     P.useSingleExpression=false; P.createNewImage=true; P.showNewImage=true;
     P.newImageId='${TARGET}'; P.newImageWidth=${rgbW}; P.newImageHeight=${rgbH};
-    P.newImageColorSpace=PixelMath.prototype.RGB; P.newImageSampleFormat=PixelMath.prototype.f32;
+    P.newImageColorSpace=PixelMath.RGB; P.newImageSampleFormat=PixelMath.f32;
     P.executeGlobal();
   `);
   if (r.status === 'error') { log('FATAL: ' + r.error.message); process.exit(1); }
@@ -294,7 +294,7 @@ async function run() {
     var P=new PixelMath; P.expression='${idHa}'; P.useSingleExpression=true;
     P.createNewImage=true; P.showNewImage=true; P.newImageId='Ha_work';
     P.newImageWidth=${rgbW}; P.newImageHeight=${rgbH};
-    P.newImageColorSpace=PixelMath.prototype.Gray; P.newImageSampleFormat=PixelMath.prototype.f32;
+    P.newImageColorSpace=PixelMath.Gray; P.newImageSampleFormat=PixelMath.f32;
     P.executeGlobal();
   `);
 
@@ -304,7 +304,7 @@ async function run() {
     var P=new PixelMath; P.expression='${idL}'; P.useSingleExpression=true;
     P.createNewImage=true; P.showNewImage=true; P.newImageId='L_work';
     P.newImageWidth=${rgbW}; P.newImageHeight=${rgbH};
-    P.newImageColorSpace=PixelMath.prototype.Gray; P.newImageSampleFormat=PixelMath.prototype.f32;
+    P.newImageColorSpace=PixelMath.Gray; P.newImageSampleFormat=PixelMath.f32;
     P.executeGlobal();
   `);
 
@@ -312,7 +312,7 @@ async function run() {
   log('  Closing originals...');
   await pjsr(`
     var ids=['${idR}','${idG}','${idB}','${idHa}','${idL}'];
-    for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();processEvents();}
+    for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();CoreApplication.processEvents();}
   `);
 
   // Check initial stats
@@ -333,16 +333,16 @@ async function run() {
     P.polyDegree = 4;
     P.boxSize = 5;
     P.boxSeparation = 5;
-    P.modelImageSampleFormat = AutomaticBackgroundExtractor.prototype.f32;
+    P.modelImageSampleFormat = AutomaticBackgroundExtractor.ModelFormat_f32;
     P.abeDownsample = 2.00;
     P.writeSampleBoxes = false;
     P.justTrySamples = false;
-    P.targetCorrection = AutomaticBackgroundExtractor.prototype.Subtract;
+    P.targetCorrection = AutomaticBackgroundExtractor.Correction_Subtract;
     P.normalize = true;
     P.discardModel = true;
     P.replaceTarget = true;
     P.correctedImageId = '';
-    P.correctedImageSampleFormat = AutomaticBackgroundExtractor.prototype.SameAsTarget;
+    P.correctedImageSampleFormat = AutomaticBackgroundExtractor.CorrectedFormat_SameAsTarget;
     P.verbosity = 0;
     P.executeOn(ImageWindow.windowById('${TARGET}').mainView);
   `);
@@ -468,7 +468,7 @@ async function run() {
   let haStarImgs = await detectNewImages(beforeHaSxt);
   if (haStarImgs.length > 0) {
     const closeIds = haStarImgs.map(i => "'" + i.id + "'").join(',');
-    await pjsr(`var ids=[${closeIds}];for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();processEvents();}`);
+    await pjsr(`var ids=[${closeIds}];for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();CoreApplication.processEvents();}`);
     log('  Closed Ha star image.');
   }
 
@@ -690,7 +690,7 @@ async function run() {
     for (var i = 0; i < cleanup.length; i++) {
       var w = ImageWindow.windowById(cleanup[i]);
       if (w) w.forceClose();
-      processEvents();
+      CoreApplication.processEvents();
     }
   `);
 

@@ -102,14 +102,14 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
     // Extract luminance for mask
     if (img.isColor) {
       var CE = new ChannelExtraction;
-      CE.colorSpace = ChannelExtraction.prototype.CIELab;
+      CE.colorSpace = ChannelExtraction.CIELab;
       CE.channels = [[true, maskId], [false, ''], [false, '']];
       CE.executeOn(w.mainView);
     } else {
       // Clone for mono
       w.mainView.window.cloneView(w.mainView, maskId);
     }
-    processEvents();
+    CoreApplication.processEvents();
 
     maskWin = ImageWindow.windowById(maskId);
     if (maskWin.isNull) throw new Error('Failed to create luminance mask');
@@ -120,7 +120,7 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
     PM.useSingleExpression = true;
     PM.createNewImage = false;
     PM.executeOn(maskWin.mainView);
-    processEvents();
+    CoreApplication.processEvents();
 
     if (${maskGamma} !== 1.0) {
       var PM2 = new PixelMath;
@@ -128,16 +128,16 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
       PM2.useSingleExpression = true;
       PM2.createNewImage = false;
       PM2.executeOn(maskWin.mainView);
-      processEvents();
+      CoreApplication.processEvents();
     }
 
     if (${maskBlur} > 0) {
       var blur = new Convolution;
-      blur.mode = Convolution.prototype.Parametric;
+      blur.mode = Convolution.Parametric;
       blur.sigma = ${maskBlur};
       blur.shape = 2;
       blur.executeOn(maskWin.mainView);
-      processEvents();
+      CoreApplication.processEvents();
     }
 
     // Apply mask
@@ -152,7 +152,7 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
     LHE1.amount = ${lheLargeA};
     LHE1.circularKernel = true;
     LHE1.executeOn(w.mainView);
-    processEvents();
+    CoreApplication.processEvents();
 
     // === LHE PASS 2: MID SCALE ===
     var LHE2 = new LocalHistogramEqualization;
@@ -161,7 +161,7 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
     LHE2.amount = ${lheMidA};
     LHE2.circularKernel = true;
     LHE2.executeOn(w.mainView);
-    processEvents();
+    CoreApplication.processEvents();
 
     // === LHE PASS 3: FINE SCALE ===
     var LHE3 = new LocalHistogramEqualization;
@@ -170,7 +170,7 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
     LHE3.amount = ${lheFineA};
     LHE3.circularKernel = true;
     LHE3.executeOn(w.mainView);
-    processEvents();
+    CoreApplication.processEvents();
 
     // === HDRMT (optional) ===
     ${doHDRMT ? `
@@ -182,13 +182,13 @@ export async function multiScaleEnhance(ctx, viewId, opts = {}) {
     HDRMT.toLightness = ${opts.toLightness !== false ? 'true' : 'false'};
     HDRMT.lightnessMask = true;
     HDRMT.executeOn(w.mainView);
-    processEvents();
+    CoreApplication.processEvents();
     ` : ''}
 
     // Remove mask
     w.removeMask();
     maskWin.forceClose();
-    processEvents();
+    CoreApplication.processEvents();
 
     // === MEASURE AFTER ===
     var after = measureDetail();
@@ -392,7 +392,7 @@ export async function shellDetailEnhance(ctx, viewId, opts = {}) {
 
       // Blur at medium sigma
       var conv1 = new Convolution;
-      conv1.mode = Convolution.prototype.Parametric;
+      conv1.mode = Convolution.Parametric;
       conv1.sigma = ${medSigma};
       conv1.shape = 2;
       conv1.aspectRatio = 1;
@@ -435,7 +435,7 @@ export async function shellDetailEnhance(ctx, viewId, opts = {}) {
       blurW2.show();
 
       var conv2 = new Convolution;
-      conv2.mode = Convolution.prototype.Parametric;
+      conv2.mode = Convolution.Parametric;
       conv2.sigma = ${lgSigma};
       conv2.shape = 2;
       conv2.aspectRatio = 1;

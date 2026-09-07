@@ -70,7 +70,7 @@ export async function loadCheckpoint(ctx, stepId, opts = {}) {
   let imgs = await ctx.listImages();
   if (imgs.length > 0) {
     const ids = imgs.map(i => "'" + i.id + "'").join(',');
-    await ctx.pjsr(`var ids=[${ids}]; for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(!w.isNull)w.forceClose();processEvents();}`);
+    await ctx.pjsr(`var ids=[${ids}]; for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(!w.isNull)w.forceClose();CoreApplication.processEvents();}`);
   }
 
   const liveImages = {};

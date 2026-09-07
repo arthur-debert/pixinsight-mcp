@@ -274,7 +274,7 @@ async function run() {
           P2.use64BitWorkingImage = true;
           P2.truncate = true; P2.truncateLower = 0; P2.truncateUpper = 1;
           P2.executeOn(v);
-          processEvents();
+          CoreApplication.processEvents();
         }
         var finalMed = v.image.median();
         var finalMax = v.image.maximum();
@@ -329,8 +329,8 @@ async function run() {
         var CE = new ChannelExtraction;
         CE.channelEnabled = [true, true, true];
         CE.channelId = ['${tgt}_R', '${tgt}_G', '${tgt}_B'];
-        CE.colorSpace = ChannelExtraction.prototype.RGB;
-        CE.sampleFormat = ChannelExtraction.prototype.SameAsSource;
+        CE.colorSpace = ChannelExtraction.RGB;
+        CE.sampleFormat = ChannelExtraction.SameAsSource;
         CE.executeOn(ImageWindow.windowById('${tgt}').mainView);
       `);
       await ctx.pjsr(`
@@ -453,10 +453,10 @@ async function run() {
         tmp.mainView.endProcess();
         if (scale < 1) {
           var R = new Resample;
-          R.mode = Resample.prototype.RelativeDimensions;
+          R.mode = Resample.RelativeDimensions;
           R.xSize = scale; R.ySize = scale;
-          R.absoluteMode = Resample.prototype.ForceWidthAndHeight;
-          R.interpolation = Resample.prototype.MitchellNetravaliFilter;
+          R.absoluteMode = Resample.ForceWidthAndHeight;
+          R.interpolation = Resample.MitchellNetravaliFilter;
           R.executeOn(tmp.mainView);
         }
         var p = '${previewPath.replace(/'/g, "\\'")}';

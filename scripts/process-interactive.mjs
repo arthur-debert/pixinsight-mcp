@@ -177,7 +177,7 @@ async function main() {
       const imgs = await listImages();
       if (imgs.length > 0) {
         const ids = imgs.map(i => "'" + i.id + "'").join(',');
-        await pjsr(`var ids=[${ids}]; for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();processEvents();}`);
+        await pjsr(`var ids=[${ids}]; for(var i=0;i<ids.length;i++){var w=ImageWindow.windowById(ids[i]);if(w)w.forceClose();CoreApplication.processEvents();}`);
         console.log(`Closed ${imgs.length} images`);
       } else {
         console.log('No images to close');

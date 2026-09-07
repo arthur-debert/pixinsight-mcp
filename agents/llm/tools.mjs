@@ -171,10 +171,10 @@ const TOOL_CATALOG = {
         tmp.mainView.endProcess();
         if (scale < 1) {
           var R = new Resample;
-          R.mode = Resample.prototype.RelativeDimensions;
+          R.mode = Resample.RelativeDimensions;
           R.xSize = scale; R.ySize = scale;
-          R.absoluteMode = Resample.prototype.ForceWidthAndHeight;
-          R.interpolation = Resample.prototype.MitchellNetravaliFilter;
+          R.absoluteMode = Resample.ForceWidthAndHeight;
+          R.interpolation = Resample.MitchellNetravaliFilter;
           R.executeOn(tmp.mainView);
         }
         var p = '${previewPath.replace(/'/g, "\\'")}';
@@ -563,7 +563,7 @@ const TOOL_CATALOG = {
           P2.use64BitWorkingImage = true;
           P2.truncate = true; P2.truncateLower = 0; P2.truncateUpper = 1;
           P2.executeOn(v);
-          processEvents();
+          CoreApplication.processEvents();
         }
 
         var finalMed = v.image.median();
@@ -678,10 +678,10 @@ const TOOL_CATALOG = {
         ${centerRA}
         ${centerDec}
         ${pixelScale}
-        P.catalogMode = ImageSolver.prototype.DataRelease;
-        P.catalog = ImageSolver.prototype.GaiaDR3;
+        P.catalogMode = ImageSolver.DataRelease;
+        P.catalog = ImageSolver.GaiaDR3;
         P.distortionCorrection = true;
-        P.projectionSystem = ImageSolver.prototype.Gnomonic;
+        P.projectionSystem = ImageSolver.Gnomonic;
         P.executeOn(ImageWindow.windowById('${input.view_id}').mainView);
         'OK';
       `);
@@ -815,8 +815,8 @@ const TOOL_CATALOG = {
       await ctx.pjsr(`
         var P = new SCNR;
         P.amount = ${input.amount ?? 0.80};
-        P.protectionMethod = SCNR.prototype.AverageNeutral;
-        P.colorToRemove = SCNR.prototype.Green;
+        P.protectionMethod = SCNR.AverageNeutral;
+        P.colorToRemove = SCNR.Green;
         P.preserveLightness = true;
         P.executeOn(ImageWindow.windowById('${input.view_id}').mainView);
       `);
@@ -1446,8 +1446,8 @@ const TOOL_CATALOG = {
         var CE = new ChannelExtraction;
         CE.channelEnabled = [true, true, true];
         CE.channelId = ['${tgt}_R', '${tgt}_G', '${tgt}_B'];
-        CE.colorSpace = ChannelExtraction.prototype.RGB;
-        CE.sampleFormat = ChannelExtraction.prototype.SameAsSource;
+        CE.colorSpace = ChannelExtraction.RGB;
+        CE.sampleFormat = ChannelExtraction.SameAsSource;
         CE.executeOn(ImageWindow.windowById('${tgt}').mainView);
         'channels extracted';
       `);
@@ -2423,7 +2423,7 @@ const TOOL_CATALOG = {
         P.outputPrefix = 'aligned_';
         P.outputPostfix = '';
         P.overwriteExistingFiles = true;
-        P.onError = StarAlignment.prototype.Continue;
+        P.onError = StarAlignment.Continue;
         P.useTriangles = true;
         P.polygonSides = 5;
         P.useBrightnessRelations = true;
@@ -2510,7 +2510,7 @@ const TOOL_CATALOG = {
 
       const r = await ctx.pjsr(`
         var P = new ChannelCombination;
-        P.colorSpace = ChannelCombination.prototype.RGB;
+        P.colorSpace = ChannelCombination.RGB;
         P.channels = [
           [true, '${input.r_view_id}'],
           [true, '${input.g_view_id}'],

@@ -1,50 +1,30 @@
+#engine v8
+
 // PixInsight MCP Watcher Script
-// Runs inside PixInsight's PJSR engine (ECMAScript 5)
-// Polls the bridge directory for commands, executes them, writes results.
-
-// ============================================================================
-// ImageSolver Library (loaded at preprocessor time for plate solving)
-// ============================================================================
-
-#define __PJSR_USE_STAR_DETECTOR_V2
-
-#include <pjsr/BRQuadTree.jsh>
-#include <pjsr/ColorSpace.jsh>
-#include <pjsr/DataType.jsh>
-#include <pjsr/FrameStyle.jsh>
-#include <pjsr/LinearTransformation.jsh>
-#include <pjsr/NumericControl.jsh>
-#include <pjsr/SectionBar.jsh>
-#include <pjsr/Sizer.jsh>
-#include <pjsr/StarDetector.jsh>
-#include <pjsr/StdButton.jsh>
-#include <pjsr/StdCursor.jsh>
-#include <pjsr/StdIcon.jsh>
-#include <pjsr/TextAlign.jsh>
-#include <pjsr/UndoFlag.jsh>
-#include <pjsr/PropertyType.jsh>
-#include <pjsr/PropertyAttribute.jsh>
-#include <pjsr/RBFType.jsh>
-#include <pjsr/APASSFlag.jsh>
-#include <pjsr/GaiaFlag.jsh>
-#include <pjsr/ReadTextOptions.jsh>
-
-#define TITLE           "Image Solver"
-#define SETTINGS_MODULE "SOLVER"
-#define STAR_CSV_FILE   (File.systemTempDirectory + "/stars-mcp.csv")
-
-// Include AdP dependencies then ImageSolver in library mode
-#include "/Applications/PixInsight/src/scripts/AdP/Projections.js"
-#include "/Applications/PixInsight/src/scripts/AdP/WCSmetadata.jsh"
-#include "/Applications/PixInsight/src/scripts/AdP/AstronomicalCatalogs.jsh"
-#include "/Applications/PixInsight/src/scripts/AdP/CommonUIControls.js"
-#include "/Applications/PixInsight/src/scripts/AdP/SearchCoordinatesDialog.js"
-#include "/Applications/PixInsight/src/scripts/AdP/CatalogDownloader.js"
-
-#define USE_SOLVER_LIBRARY
-#include "/Applications/PixInsight/src/scripts/AdP/ImageSolver.js"
-
-#define SETTINGS_MODULE_SCRIPT "SOLVER"
+//
+// Runs inside PixInsight's PJSR V8 runtime (PixInsight 1.9.4 "Lockhart" and later).
+// Polls the bridge directory for command files, executes them, writes result files.
+//
+// The V8 runtime replaced SpiderMonkey in 1.9.4 and dropped the legacy engine
+// entirely on Apple Silicon, so the "engine v8" directive above is mandatory.
+// Without it the core refuses to load this file and reports "the legacy 'sm'
+// JavaScript engine is not available in this PixInsight build".
+//
+// Three consequences shape the code below:
+//
+//   - The pjsr .jsh headers are gone, and so are the include directives that
+//     pulled them in. Enumeration constants are class properties now
+//     (SCNR.Green, UndoFlag.NoSwapFile), not globals.
+//
+//   - SomeProcess.prototype.SomeConstant evaluates to undefined instead of
+//     throwing, so a leftover ".prototype." silently writes garbage into a
+//     process parameter. Always reach for SomeProcess.SomeConstant.
+//
+//   - The preprocessor strips comments by scanning for delimiters without
+//     tracking which comment it is already inside. A slash-star pair typed
+//     inside a line comment therefore opens a block comment that swallows the
+//     rest of the file, and the load fails with no message at all. Never write
+//     a glob like "pjsr" slash star ".jsh" in a comment here.
 
 // ============================================================================
 // Configuration
@@ -55,7 +35,13 @@ var COMMANDS_DIR = BRIDGE_DIR + "/commands";
 var RESULTS_DIR = BRIDGE_DIR + "/results";
 var LOGS_DIR = BRIDGE_DIR + "/logs";
 var POLL_INTERVAL_MS = 1000;
-var WATCHER_VERSION = "0.1.0";
+var WATCHER_VERSION = "0.2.0";
+
+// Heartbeat file. The Node side reads it to tell three states apart that all
+// look identical from the command directory: PixInsight is not running, the
+// watcher never loaded (a PJSR compile error, for instance), and the watcher is
+// alive but busy inside a long process. Rewritten on every idle cycle.
+var HEARTBEAT_PATH = BRIDGE_DIR + "/watcher.json";
 
 // ============================================================================
 // File Helpers (PJSR File API)
@@ -84,7 +70,7 @@ function ensureDirectory(path) {
 
 function listJsonFiles(dirPattern) {
    try {
-      return searchDirectory(dirPattern);
+      return File.searchDirectory(dirPattern);
    } catch (e) {
       return [];
    }
@@ -93,6 +79,45 @@ function listJsonFiles(dirPattern) {
 function getTimestamp() {
    var d = new Date();
    return d.toISOString();
+}
+
+// ============================================================================
+// Heartbeat
+// ============================================================================
+
+function coreVersionString() {
+   try {
+      return CoreApplication.versionMajor + "." +
+             CoreApplication.versionMinor + "." +
+             CoreApplication.versionRelease + "." +
+             CoreApplication.versionRevision;
+   } catch (e) {
+      return "unknown";
+   }
+}
+
+// State the Node side can read while a command is in flight. `state` is "idle"
+// or "busy"; when busy, `currentCommand` and `busySince` say what is running and
+// since when, which is what lets the client wait out a 20-minute BlurXTerminator
+// run instead of declaring a timeout.
+function writeHeartbeat(state, currentCommand, commandCount) {
+   try {
+      File.writeTextFile(HEARTBEAT_PATH, JSON.stringify({
+         version: WATCHER_VERSION,
+         engine: "v8",
+         pid: -1,
+         coreVersion: coreVersionString(),
+         state: state,
+         currentCommand: currentCommand || null,
+         busySince: currentCommand ? getTimestamp() : null,
+         commandsProcessed: commandCount,
+         timestamp: getTimestamp()
+      }));
+   } catch (e) {
+      // A heartbeat write failure must never take the watcher down: the command
+      // loop is still the thing that matters.
+      console.warningln("[MCP Watcher] Heartbeat write failed: " + e.message);
+   }
 }
 
 // ============================================================================
@@ -281,7 +306,7 @@ function handleColorCalibrate(command) {
 
 function handleRemoveGreenCast(command) {
    var P = new SCNR;
-   P.colorToRemove = SCNR.prototype.Green;
+   P.colorToRemove = SCNR.Green;
    P.amount = command.parameters.amount !== undefined ? command.parameters.amount : 1.0;
 
    var view = findViewById(command.targetView);
@@ -402,8 +427,8 @@ function handleSharpen(command) {
 function handleDeconvolve(command) {
    var P = new Deconvolution;
    // Use a Gaussian PSF
-   P.algorithm = Deconvolution.prototype.RichardsonLucy;
-   P.psfMode = Deconvolution.prototype.Gaussian;
+   P.algorithm = Deconvolution.RichardsonLucy;
+   P.psfMode = Deconvolution.Gaussian;
    P.psfGaussianSigma = command.parameters.psfSigma || 2.5;
    P.iterations = [
       [command.parameters.iterations || 50, false, 0, 0, 0, false, 0, 0]
@@ -482,21 +507,47 @@ function handleBlendNarrowband(command) {
    };
 }
 
+// Wrap PixInsight's console log around a block of work. Everything the core and
+// its processes print lands in the returned string, which is what turns "Script
+// error: undefined is not an object" into something diagnosable from Node.
+function beginConsoleCapture() {
+   try { console.beginLog(); return true; } catch (e) { return false; }
+}
+
+function endConsoleCapture(active) {
+   if (!active) return "";
+   try {
+      var text = console.endLog();
+      return text ? text.toString() : "";
+   } catch (e) {
+      return "";
+   }
+}
+
 function handleRunScript(command) {
    var code = command.parameters.code;
-   // Capture console output
-   var consoleOutput = "";
+   var capturing = beginConsoleCapture();
+   var result;
    try {
-      // Execute the code
-      var result = eval(code);
-      return {
-         status: "success",
-         outputs: { consoleOutput: String(result !== undefined ? result : "Script executed.") },
-         message: "Script executed successfully"
-      };
+      result = eval(code);
    } catch (e) {
-      throw new Error("Script error: " + e.message);
+      var failLog = endConsoleCapture(capturing);
+      var err = new Error("Script error: " + e.message);
+      // Carried through to the result file so the caller sees the PixInsight
+      // console around the failure, not just the exception message.
+      err.consoleOutput = failLog;
+      err.scriptStack = e.stack || "";
+      throw err;
    }
+   var okLog = endConsoleCapture(capturing);
+   return {
+      status: "success",
+      outputs: {
+         consoleOutput: String(result !== undefined ? result : "Script executed."),
+         consoleLog: okLog
+      },
+      message: "Script executed successfully"
+   };
 }
 
 // ============================================================================
@@ -571,6 +622,38 @@ function dispatchCommand(command) {
 // Main Polling Loop
 // ============================================================================
 
+function commandIdFromPath(filePath) {
+   var base = File.extractName(filePath);
+   return base && base.length > 0 ? base : "unknown";
+}
+
+// Result files are the only channel back to Node, so every exit path from a
+// command must produce one. A command that dies without a result leaves the
+// caller polling until its timeout with nothing to report.
+function writeResult(resultObj) {
+   var resultPath = RESULTS_DIR + "/" + resultObj.id + ".json";
+   try {
+      writeTextFile(resultPath, JSON.stringify(resultObj));
+      return true;
+   } catch (e) {
+      console.criticalln("[MCP Watcher] Failed to write result " + resultObj.id + ": " + e.message);
+      // Second attempt with a minimal payload: the usual cause is something
+      // unserializable in outputs, not a broken filesystem.
+      try {
+         writeTextFile(resultPath, JSON.stringify({
+            id: resultObj.id,
+            timestamp: getTimestamp(),
+            status: "error",
+            error: { message: "Result serialization failed: " + e.message, type: "ResultWriteError" }
+         }));
+         return true;
+      } catch (e2) {
+         console.criticalln("[MCP Watcher] Result write retry also failed: " + e2.message);
+         return false;
+      }
+   }
+}
+
 function processNextCommand() {
    var files = listJsonFiles(COMMANDS_DIR + "/*.json");
    if (files.length === 0) {
@@ -580,18 +663,36 @@ function processNextCommand() {
    // Sort by filename (timestamp-based UUIDs give roughly chronological order)
    files.sort();
 
-   // Process the first command
    var filePath = files[0];
+   var commandId = commandIdFromPath(filePath);
    var commandJson, command;
 
    try {
       commandJson = readTextFile(filePath);
       command = JSON.parse(commandJson);
    } catch (e) {
-      console.criticalln("[MCP Watcher] Failed to parse command file: " + filePath + " - " + e.message);
+      console.criticalln("[MCP Watcher] Unreadable command file " + filePath + ": " + e.message);
+      // The filename is the command id, so the caller can still be told why its
+      // command died instead of waiting out the full timeout.
+      writeResult({
+         id: commandId,
+         timestamp: getTimestamp(),
+         status: "error",
+         duration_ms: 0,
+         error: { message: "Malformed command file: " + e.message, type: "CommandParseError" }
+      });
       deleteFile(filePath);
       return true;
    }
+
+   if (!command.id) command.id = commandId;
+
+   // Delete the command file BEFORE running the handler. A process that hard-
+   // crashes PixInsight would otherwise leave its command in place, and the
+   // watcher would re-run it on the next start — crashing again, forever.
+   deleteFile(filePath);
+
+   writeHeartbeat("busy", { id: command.id, tool: command.tool, startedAt: getTimestamp() }, g_commandCount);
 
    var startTime = Date.now();
    var resultObj;
@@ -619,90 +720,120 @@ function processNextCommand() {
          error: {
             message: e.message,
             type: e.name || "Error",
-            stack: e.stack || ""
+            stack: e.scriptStack || e.stack || "",
+            consoleOutput: e.consoleOutput || ""
          }
       };
    }
 
-   // Write result
-   var resultPath = RESULTS_DIR + "/" + command.id + ".json";
-   try {
-      writeTextFile(resultPath, JSON.stringify(resultObj));
+   if (writeResult(resultObj)) {
       console.writeln("[MCP Watcher] Result written: " + resultObj.status +
          " (" + resultObj.duration_ms + "ms)");
-   } catch (e) {
-      console.criticalln("[MCP Watcher] Failed to write result: " + e.message);
    }
-
-   // Delete command file
-   deleteFile(filePath);
 
    return true;
 }
 
+var g_commandCount = 0;
+
 function runWatcher() {
-   // Ensure directories exist
    ensureDirectory(BRIDGE_DIR);
    ensureDirectory(COMMANDS_DIR);
    ensureDirectory(RESULTS_DIR);
    ensureDirectory(LOGS_DIR);
 
+   // Capture the startup block to a file. Everything PixInsight says while the
+   // script loads — deprecation warnings above all — otherwise exists only in the
+   // Process Console window, which is invisible in automation mode and to
+   // anything on the Node side.
+   var startupCapture = beginConsoleCapture();
+
    console.noteln("===========================================");
    console.noteln("  PixInsight MCP Watcher v" + WATCHER_VERSION);
-   console.noteln("  Bridge: " + BRIDGE_DIR);
-   console.noteln("  Polling every " + POLL_INTERVAL_MS + "ms");
+   console.noteln("  Core:    " + coreVersionString() + " (PJSR V8)");
+   console.noteln("  Bridge:  " + BRIDGE_DIR);
    console.noteln("  Ctrl+F11 to abort");
    console.noteln("===========================================");
 
-   var commandCount = 0;
+   // Touch every core API the command loop relies on, so a deprecation warning
+   // for any of them lands in the startup log rather than in the middle of a
+   // processing run hours later.
+   CoreApplication.processEvents();
+   System.msleep(1);
+   File.searchDirectory(COMMANDS_DIR + "/*.json");
+
+   var startupLog = endConsoleCapture(startupCapture);
+   try {
+      File.writeTextFile(LOGS_DIR + "/watcher-startup.log", startupLog);
+   } catch (e) {
+      console.warningln("[MCP Watcher] Could not write the startup log: " + e.message);
+   }
 
    console.show();
 
-   // Graceful shutdown: check for sentinel file
+   // Announce liveness before the first poll. A caller that starts PixInsight
+   // and waits on this file gets a definite answer within seconds instead of
+   // guessing from process state whether the script compiled.
+   writeHeartbeat("idle", null, 0);
+
    var SHUTDOWN_FILE = BRIDGE_DIR + "/shutdown";
 
    function shouldShutdown() {
       if (console.abortRequested) return true;
       if (File.exists(SHUTDOWN_FILE)) {
-         try { File.remove(SHUTDOWN_FILE); } catch(e) {}
+         try { File.remove(SHUTDOWN_FILE); } catch (e) {}
          return true;
       }
       return false;
    }
 
-   // Main loop — processEvents() keeps PixInsight UI responsive
-   // Use short sleeps (20ms) with frequent processEvents() for UI responsiveness
+   // Main loop. CoreApplication.processEvents() keeps the PixInsight UI responsive; short sleeps
+   // between calls keep the idle cost near zero.
    for (;;) {
-      // Yield to PixInsight UI
-      processEvents();
+      CoreApplication.processEvents();
 
-      // Check abort or shutdown signal
       if (shouldShutdown()) {
          console.warningln("[MCP Watcher] Shutdown requested. Stopping.");
          break;
       }
 
-      var processed = processNextCommand();
+      var processed = false;
+      try {
+         processed = processNextCommand();
+      } catch (e) {
+         // processNextCommand handles its own command errors; reaching here means
+         // the loop machinery itself failed (a full disk, a permissions change).
+         // Log it and keep polling rather than leaving PixInsight running with a
+         // dead watcher, which is indistinguishable from a hang on the Node side.
+         console.criticalln("[MCP Watcher] Loop error: " + e.message);
+         System.msleep(1000);
+      }
+
       if (processed) {
-         commandCount++;
-         // Yield heavily after command execution so UI can catch up
+         g_commandCount++;
+         writeHeartbeat("idle", null, g_commandCount);
+         // Yield heavily after a command so the UI can catch up.
          for (var y = 0; y < 20; ++y) {
-            processEvents();
-            msleep(20);
+            CoreApplication.processEvents();
+            System.msleep(20);
             if (shouldShutdown()) break;
          }
       } else {
-         // No commands — yield frequently with short sleeps for UI responsiveness
-         // Total idle cycle: ~500ms (25 x 20ms) before re-checking commands
+         writeHeartbeat("idle", null, g_commandCount);
+         // ~500ms idle cycle (25 x 20ms) before re-checking for commands.
          for (var i = 0; i < 25; ++i) {
-            msleep(20);
-            processEvents();
+            System.msleep(20);
+            CoreApplication.processEvents();
             if (shouldShutdown()) break;
          }
       }
    }
 
-   console.noteln("[MCP Watcher] Stopped. Processed " + commandCount + " command(s).");
+   // Clear the heartbeat on the way out so a client can tell a clean shutdown
+   // from a crash: no file means stopped, a stale file means something died.
+   try { deleteFile(HEARTBEAT_PATH); } catch (e) {}
+
+   console.noteln("[MCP Watcher] Stopped. Processed " + g_commandCount + " command(s).");
 }
 
 // ============================================================================
