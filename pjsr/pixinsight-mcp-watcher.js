@@ -120,7 +120,24 @@ function coreVersionString() {
 // or "busy"; when busy, `currentCommand` and `busySince` say what is running and
 // since when, which is what lets the client wait out a 20-minute BlurXTerminator
 // run instead of declaring a timeout.
+// The command loop polls every 60ms, but the client's staleness threshold is
+// 30 seconds. Rewriting the heartbeat on every cycle would be 16 file writes a
+// second for no benefit, and those writes land in the same directory the loop
+// is scanning. A busy or idle TRANSITION always writes; a repeat of the same
+// state waits out this interval.
+var HEARTBEAT_MIN_INTERVAL_MS = 1000;
+var g_lastHeartbeatAt = 0;
+var g_lastHeartbeatState = null;
+
 function writeHeartbeat(state, currentCommand, commandCount) {
+   var now = Date.now();
+   var isTransition = (state !== g_lastHeartbeatState) || (currentCommand !== null);
+   if (!isTransition && (now - g_lastHeartbeatAt) < HEARTBEAT_MIN_INTERVAL_MS) {
+      return;
+   }
+   g_lastHeartbeatAt = now;
+   g_lastHeartbeatState = state;
+
    try {
       File.writeTextFile(HEARTBEAT_PATH, JSON.stringify({
          version: WATCHER_VERSION,
@@ -835,16 +852,23 @@ function runWatcher() {
       if (processed) {
          g_commandCount++;
          writeHeartbeat("idle", null, g_commandCount);
-         // Yield heavily after a command so the UI can catch up.
-         for (var y = 0; y < 20; ++y) {
+         // Let the core settle after a command. This used to be 20 cycles of
+         // 20ms, which charged 400ms to EVERY call — the single largest term in
+         // the bridge's round-trip time, and the agent loop is hundreds of short
+         // calls. The yields still happen; there are just fewer of them, and in
+         // automation mode there is no window waiting to repaint.
+         for (var y = 0; y < 3; ++y) {
             CoreApplication.processEvents();
             System.msleep(20);
             if (shouldShutdown()) break;
          }
       } else {
          writeHeartbeat("idle", null, g_commandCount);
-         // ~500ms idle cycle (25 x 20ms) before re-checking for commands.
-         for (var i = 0; i < 25; ++i) {
+         // ~60ms idle cycle before re-checking for commands. The old 500ms
+         // cycle added a quarter-second to every call on average, and the agent
+         // loop is hundreds of short calls. The UI yield still runs on the
+         // same rhythm, so the UI stays as responsive as it was.
+         for (var i = 0; i < 3; ++i) {
             System.msleep(20);
             CoreApplication.processEvents();
             if (shouldShutdown()) break;

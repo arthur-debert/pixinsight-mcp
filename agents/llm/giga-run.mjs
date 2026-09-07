@@ -218,7 +218,7 @@ async function main() {
   console.log('\n--- Phase 2+: Creative Agent via Claude Max ---');
 
   // Build system prompt
-  const systemPrompt = buildGigaOrchestratorPrompt(brief, config);
+  const systemPrompt = buildGigaOrchestratorPrompt(brief, config, prepResult.plan);
 
   // Creative agent gets all tools EXCEPT readiness (prep already done)
   const creativeCategories = [
@@ -248,11 +248,14 @@ ${viewsList}
 ${prepResult.views.l ? `### Current L stats:
 - Median: ${prepResult.stats.l?.median?.toFixed(6) || 'N/A'}
 - Max: ${(prepResult.stats.l?.max || 0).toFixed(4)}
-- L is STARLESS, stretched from processing profile targets
+- L is ${prepResult.plan && !prepResult.plan.extractStars.run ? 'STARS INTACT' : 'STARLESS'}, stretched from processing profile targets
 ` : ''}
 
 ${prepResult.views.ha ? `### Ha available: \`${prepResult.views.ha}\` (stretched, starless)` : ''}
 ${prepResult.views.stars ? `### Stars available: \`${prepResult.views.stars}\` (stretched)` : ''}
+${prepResult.plan && !prepResult.plan.extractStars.run ? `### No star layer — deliberately
+Prep did not extract stars: ${prepResult.plan.extractStars.reason}
+Every view above still contains its stars. There is nothing to blend back at the end.` : ''}
 
 ### Diagnostic views attached (RGB overview, center crop, corner crop, background-stretched)
 

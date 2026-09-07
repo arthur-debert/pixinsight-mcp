@@ -13,39 +13,76 @@
       "headroom": 0.08
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Compare with GC if gradients persist" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try", "reason": "Only if SPCC fails" },
-      "NXT": { "use": true, "denoise_linear": 0.20, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": true, "start_amount": 0.35, "start_radius": 64, "mask_blur": 8, "mask_clipLow": 0.06 },
-      "HDRMT": { "use": "core_only", "inverted": true, "layers": 5, "iterations": 1, "reason": "Apply ONLY through core zone mask — compresses core dynamic range to reveal detail. Do NOT apply globally (flattens faint structure). v7-v9 showed core burns without it." },
-      "LRGB": { "use": "avoid", "reason": "v3 showed native LRGB crushes PN brightness. Use RGB-only + PixelMath L enhancement instead." },
-      "Ha_injection": { "use": true, "reason": "MANDATORY for HaLRGB — enhances shell structure. Use max_output=0.85 to prevent R burning." }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Compare with GC if gradients persist"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try",
+        "reason": "Only if SPCC fails"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.2,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": true,
+        "start_amount": 0.35,
+        "start_radius": 64,
+        "mask_blur": 8,
+        "mask_clipLow": 0.06
+      },
+      "HDRMT": {
+        "use": "core_only",
+        "inverted": true,
+        "layers": 5,
+        "iterations": 1,
+        "reason": "Apply ONLY through core zone mask \u2014 compresses core dynamic range to reveal detail. Do NOT apply globally (flattens faint structure). v7-v9 showed core burns without it."
+      },
+      "LRGB": {
+        "use": "avoid",
+        "reason": "v3 showed native LRGB crushes PN brightness. Use RGB-only + PixelMath L enhancement instead."
+      },
+      "Ha_injection": {
+        "use": true,
+        "reason": "MANDATORY for HaLRGB \u2014 enhances shell structure. Use max_output=0.85 to prevent R burning."
+      }
     },
     "saturation": {
       "rgb_initial": 0.75,
       "composition_target": 0.85,
       "hue_selective": true,
-      "max_p90": 0.80
+      "max_p90": 0.8
     },
     "burn": {
       "max_bright_block_pct": 3.0
     },
     "stars": {
-      "screen_blend_strength": 1.00,
+      "screen_blend_strength": 1.0,
       "prominence": "prominent"
     },
-    "notes": "Focus on revealing internal structure (eyes, shells) AND outer halo. Color is teal/blue for OIII-dominant + red/pink for Ha. OUTER HALO is a key differentiator — apply shadow-lifting curves through inverted luminance mask to make it OBVIOUSLY visible. Push OIII saturation hard (blue/teal). Background should reveal faint outer structure, not be crushed to black. RGB-only + PixelMath L enhancement preferred over native LRGB (which crushes brightness).",
+    "notes": "Focus on revealing internal structure (eyes, shells) AND outer halo. Color is teal/blue for OIII-dominant + red/pink for Ha. OUTER HALO is a key differentiator \u2014 apply shadow-lifting curves through inverted luminance mask to make it OBVIOUSLY visible. Push OIII saturation hard (blue/teal). Background should reveal faint outer structure, not be crushed to black. RGB-only + PixelMath L enhancement preferred over native LRGB (which crushes brightness).",
     "learned_overrides": {
       "avoid_native_lrgb": true,
       "shadow_lift_mandatory": true,
       "oiii_saturation_push": "aggressive"
     }
   },
-
   "galaxy_spiral": {
     "description": "Face-on spiral. M81, M51, M33, M101, M106",
     "characteristics": {
@@ -60,23 +97,66 @@
       "headroom": 0.12
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Compare with GC — ABE deg2 often gentler for galaxies" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try", "reason": "Only if SPCC fails, amount 0.30-0.35" },
-      "NXT": { "use": true, "denoise_linear": 0.18, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": false, "caution": "Leaves residuals on HII regions and spiral knots" },
-      "LHE": { "use": true, "start_amount": 0.20, "start_radius": 128, "mask_blur": 6, "mask_clipLow": 0.10, "mask_gamma": 2.0 },
-      "HDRMT": { "use": true, "inverted": true, "layers": 6, "iterations": 1, "mask_clipLow": 0.30, "reason": "Essential for core and arm detail" },
-      "LRGB": { "use": true, "lightness": 0.55, "saturation": 0.80 },
-      "Ha_injection": { "use": "try", "reason": "Useful for HII regions if Ha data available", "strength": 0.25 }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Compare with GC \u2014 ABE deg2 often gentler for galaxies"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try",
+        "reason": "Only if SPCC fails, amount 0.30-0.35"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.18,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": false,
+        "caution": "Leaves residuals on HII regions and spiral knots"
+      },
+      "LHE": {
+        "use": true,
+        "start_amount": 0.2,
+        "start_radius": 128,
+        "mask_blur": 6,
+        "mask_clipLow": 0.1,
+        "mask_gamma": 2.0
+      },
+      "HDRMT": {
+        "use": true,
+        "inverted": true,
+        "layers": 6,
+        "iterations": 1,
+        "mask_clipLow": 0.3,
+        "reason": "Essential for core and arm detail"
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.55,
+        "saturation": 0.8
+      },
+      "Ha_injection": {
+        "use": "try",
+        "reason": "Useful for HII regions if Ha data available",
+        "strength": 0.25
+      }
     },
     "saturation": {
       "rgb_initial": 0.68,
       "composition_target": 0.75,
       "hue_selective": true,
-      "blue_boost": 1.30,
+      "blue_boost": 1.3,
       "pink_boost": 1.25,
       "max_p90": 0.75
     },
@@ -92,10 +172,9 @@
       "rolloff_knee": 0.65,
       "notes": "Galaxies need controlled stars. Use midtone 0.22 and 5 iterations (not 0.15/6 which bloats). Single saturation curve. Blend at 0.85 max."
     },
-    "notes": "Dark background (0.08-0.10). IFN may be present — preserve with gentle shadow handling. Dust lanes and spiral arms are primary detail targets. Core easily clips — use headroom. Push saturation — galaxies should have warm, vivid colors. Stars must be TIGHT and subdued — do NOT use aggressive star stretch (midtone < 0.20 or iterations > 5 will bloat stars).",
+    "notes": "Dark background (0.08-0.10). IFN may be present \u2014 preserve with gentle shadow handling. Dust lanes and spiral arms are primary detail targets. Core easily clips \u2014 use headroom. Push saturation \u2014 galaxies should have warm, vivid colors. Stars must be TIGHT and subdued \u2014 do NOT use aggressive star stretch (midtone < 0.20 or iterations > 5 will bloat stars).",
     "learned_overrides": {}
   },
-
   "galaxy_edge_on": {
     "description": "Edge-on spiral. NGC 891, NGC 4565, NGC 4631",
     "characteristics": {
@@ -110,23 +189,65 @@
       "headroom": 0.12
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "ABE deg2 preferred for gentle correction" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try", "reason": "Only if SPCC fails" },
-      "NXT": { "use": true, "denoise_linear": 0.20, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": true, "start_amount": 0.20, "start_radius": 64, "mask_blur": 5, "mask_clipLow": 0.12, "mask_gamma": 2.0 },
-      "HDRMT": { "use": true, "inverted": true, "layers": 5, "iterations": 1, "median_transform": true, "reason": "Try on L channel — use medianTransform=true to reduce ringing risk. Ringing detector may false-positive on edge-on natural profiles." },
-      "LRGB": { "use": true, "lightness": 0.45, "saturation": 0.75, "reason": "Start moderate — iterate down if saturation gate warns, iterate up if color too muted." },
-      "Ha_injection": { "use": "try", "reason": "Only if Ha data shows real signal" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "ABE deg2 preferred for gentle correction"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try",
+        "reason": "Only if SPCC fails"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.2,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": true,
+        "start_amount": 0.2,
+        "start_radius": 64,
+        "mask_blur": 5,
+        "mask_clipLow": 0.12,
+        "mask_gamma": 2.0
+      },
+      "HDRMT": {
+        "use": true,
+        "inverted": true,
+        "layers": 5,
+        "iterations": 1,
+        "median_transform": true,
+        "reason": "Try on L channel \u2014 use medianTransform=true to reduce ringing risk. Ringing detector may false-positive on edge-on natural profiles."
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.45,
+        "saturation": 0.75,
+        "reason": "Start moderate \u2014 iterate down if saturation gate warns, iterate up if color too muted."
+      },
+      "Ha_injection": {
+        "use": "try",
+        "reason": "Only if Ha data shows real signal"
+      }
     },
     "saturation": {
       "rgb_initial": 0.65,
       "composition_target": 0.75,
       "hue_selective": false,
-      "max_p90": 0.80
+      "max_p90": 0.8
     },
     "burn": {
       "max_bright_block_pct": 3.0
@@ -135,10 +256,9 @@
       "screen_blend_strength": 0.95,
       "prominence": "prominent"
     },
-    "notes": "Dust lane is dark absorption feature. Galaxy body should be warm golden — do NOT strip saturation too aggressively. Natural edge-on galaxies have P90 around 0.5-0.7 in the bulge. Use multi_scale_enhance with HDRMT for L detail. Iterate LRGB saturation param if check_saturation fails — never desaturate the combined result.",
+    "notes": "Dust lane is dark absorption feature. Galaxy body should be warm golden \u2014 do NOT strip saturation too aggressively. Natural edge-on galaxies have P90 around 0.5-0.7 in the bulge. Use multi_scale_enhance with HDRMT for L detail. Iterate LRGB saturation param if check_saturation fails \u2014 never desaturate the combined result.",
     "learned_overrides": {}
   },
-
   "galaxy_elliptical": {
     "description": "Elliptical galaxy. M87, M49, M60, NGC 5128 (Cen A)",
     "characteristics": {
@@ -153,35 +273,73 @@
       "headroom": 0.12
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Compare with GC" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.18, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": "try", "start_amount": 0.15, "start_radius": 64, "mask_blur": 5, "mask_clipLow": 0.12, "reason": "Ellipticals are smooth — gentle or skip" },
-      "HDRMT": { "use": "try", "inverted": true, "layers": 5, "iterations": 1, "reason": "Can reveal globular clusters and jets around ellipticals" },
-      "LRGB": { "use": true, "lightness": 0.45, "saturation": 0.75 },
-      "Ha_injection": { "use": false, "reason": "Ellipticals rarely have Ha emission" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Compare with GC"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.18,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": "try",
+        "start_amount": 0.15,
+        "start_radius": 64,
+        "mask_blur": 5,
+        "mask_clipLow": 0.12,
+        "reason": "Ellipticals are smooth \u2014 gentle or skip"
+      },
+      "HDRMT": {
+        "use": "try",
+        "inverted": true,
+        "layers": 5,
+        "iterations": 1,
+        "reason": "Can reveal globular clusters and jets around ellipticals"
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.45,
+        "saturation": 0.75
+      },
+      "Ha_injection": {
+        "use": false,
+        "reason": "Ellipticals rarely have Ha emission"
+      }
     },
     "saturation": {
       "rgb_initial": 0.55,
-      "composition_target": 0.60,
+      "composition_target": 0.6,
       "hue_selective": false,
-      "max_p90": 0.50
+      "max_p90": 0.5
     },
     "burn": {
       "max_bright_block_pct": 3.0
     },
     "stars": {
-      "screen_blend_strength": 0.90,
+      "screen_blend_strength": 0.9,
       "prominence": "subdued"
     },
-    "notes": "Smooth gradient structure — do not over-sharpen. Color is typically warm yellow/golden. Globular cluster systems and jets (M87) are secondary features. Dark background essential.",
+    "notes": "Smooth gradient structure \u2014 do not over-sharpen. Color is typically warm yellow/golden. Globular cluster systems and jets (M87) are secondary features. Dark background essential.",
     "learned_overrides": {}
   },
-
   "galaxy_cluster": {
     "description": "Galaxy cluster. Abell 2151 (Hercules), Abell 1656 (Coma), Stephan's Quintet",
     "characteristics": {
@@ -196,39 +354,77 @@
       "headroom": 0.05
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Compare with GC" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try", "reason": "SCNR 0.4 for green excess" },
-      "NXT": { "use": true, "denoise_linear": 0.20, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": true, "start_amount": 0.25, "start_radius": 96, "mask_blur": 8, "mask_clipLow": 0.08 },
-      "HDRMT": { "use": true, "inverted": true, "layers": 5, "iterations": 1, "median_transform": true, "reason": "HDRMT with medianTransform is the main detail driver for clusters (+18% on Abell2151). Push harder — try layers 5-7, iterations 1-2." },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.85 },
-      "Ha_injection": { "use": false }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Compare with GC"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try",
+        "reason": "SCNR 0.4 for green excess"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.2,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": true,
+        "start_amount": 0.25,
+        "start_radius": 96,
+        "mask_blur": 8,
+        "mask_clipLow": 0.08
+      },
+      "HDRMT": {
+        "use": true,
+        "inverted": true,
+        "layers": 5,
+        "iterations": 1,
+        "median_transform": true,
+        "reason": "HDRMT with medianTransform is the main detail driver for clusters (+18% on Abell2151). Push harder \u2014 try layers 5-7, iterations 1-2."
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.5,
+        "saturation": 0.85
+      },
+      "Ha_injection": {
+        "use": false
+      }
     },
     "saturation": {
-      "rgb_initial": 0.70,
-      "composition_target": 0.80,
+      "rgb_initial": 0.7,
+      "composition_target": 0.8,
       "hue_selective": true,
-      "blue_boost": 1.30,
+      "blue_boost": 1.3,
       "max_p90": 0.75
     },
     "burn": {
       "max_bright_block_pct": 3.0
     },
     "stars": {
-      "screen_blend_strength": 1.00,
+      "screen_blend_strength": 1.0,
       "prominence": "subdued"
     },
-    "notes": "Many small galaxies — each needs to be visible with distinct colors (blue spirals, golden ellipticals). Push saturation HARD — blue galaxies must look blue. Dark background essential. HDRMT with medianTransform is the primary detail tool — push layers and iterations. LHE on individual galaxies through tight masks.",
+    "notes": "Many small galaxies \u2014 each needs to be visible with distinct colors (blue spirals, golden ellipticals). Push saturation HARD \u2014 blue galaxies must look blue. Dark background essential. HDRMT with medianTransform is the primary detail tool \u2014 push layers and iterations. LHE on individual galaxies through tight masks.",
     "learned_overrides": {
       "hdrmt_median_transform": true,
       "push_blue_saturation": true
     }
   },
-
   "emission_nebula": {
     "description": "Bright emission nebula. M42, NGC 7000, Rosette, IC 1396, Crescent, Bubble",
     "characteristics": {
@@ -239,22 +435,68 @@
       "star_density": "dense"
     },
     "stretch": {
-      "target_median": 0.10,
+      "target_median": 0.1,
       "headroom": 0.08
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "May be needed for strong gradients, deg 3-4" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try", "reason": "Emission nebulae often have green excess" },
-      "NXT": { "use": true, "denoise_linear": 0.20, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": "avoid_on_shells", "start_amount": 0.25, "start_radius": 96, "mask_blur": 10, "mask_clipLow": 0.06, "reason": "LHE pushes shell brightness causing clamp→flatten cycle. Use shell_detail_enhance for bright shell nebulae." },
-      "shell_detail_enhance": { "use": true, "medium_amount": 1.0, "large_amount": 0.5, "reason": "Brightness-neutral detail enhancement for emission shells. Preferred over LHE/multi_scale_enhance." },
-      "HDRMT": { "use": "try", "inverted": false, "layers": 6, "iterations": 2, "reason": "Normal mode to compress bright cores (M42). Try on bright regions only. May trigger ringing on shell structures." },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.50 },
-      "Ha_injection": { "use": true, "strength": 0.40, "reason": "Ha is primary signal for emission nebulae" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "May be needed for strong gradients, deg 3-4"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try",
+        "reason": "Emission nebulae often have green excess"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.2,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": "avoid_on_shells",
+        "start_amount": 0.25,
+        "start_radius": 96,
+        "mask_blur": 10,
+        "mask_clipLow": 0.06,
+        "reason": "LHE pushes shell brightness causing clamp\u2192flatten cycle. Use shell_detail_enhance for bright shell nebulae."
+      },
+      "shell_detail_enhance": {
+        "use": true,
+        "medium_amount": 1.0,
+        "large_amount": 0.5,
+        "reason": "Brightness-neutral detail enhancement for emission shells. Preferred over LHE/multi_scale_enhance."
+      },
+      "HDRMT": {
+        "use": "try",
+        "inverted": false,
+        "layers": 6,
+        "iterations": 2,
+        "reason": "Normal mode to compress bright cores (M42). Try on bright regions only. May trigger ringing on shell structures."
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.5,
+        "saturation": 0.5
+      },
+      "Ha_injection": {
+        "use": true,
+        "strength": 0.4,
+        "reason": "Ha is primary signal for emission nebulae"
+      }
     },
     "saturation": {
       "rgb_initial": 0.68,
@@ -270,20 +512,19 @@
       "reason": "LHE (multi_scale_enhance) pushes shell brightness causing highlight compression cycle"
     },
     "highlight_texture": {
-      "min_retention": 0.40,
-      "warn_retention": 0.60
+      "min_retention": 0.4,
+      "warn_retention": 0.6
     },
     "stars": {
       "screen_blend_strength": 0.95,
       "prominence": "balanced"
     },
-    "notes": "Color is the primary value. Ha strongly enhances. Use shell_detail_enhance for bright shells — LHE causes perceptual burn from highlight compression. Use create_adaptive_zone_masks for zone-based processing. Lower stretch target (0.10) gives headroom for Ha injection. Filament structure is the detail target.",
+    "notes": "Color is the primary value. Ha strongly enhances. Use shell_detail_enhance for bright shells \u2014 LHE causes perceptual burn from highlight compression. Use create_adaptive_zone_masks for zone-based processing. Lower stretch target (0.10) gives headroom for Ha injection. Filament structure is the detail target.",
     "learned_overrides": {
       "prefer_shell_detail_enhance": true,
       "lower_stretch_for_headroom": true
     }
   },
-
   "reflection_nebula": {
     "description": "Reflection nebula. M45 (Pleiades), NGC 7023 (Iris), IC 2118",
     "characteristics": {
@@ -298,20 +539,54 @@
       "headroom": 0.03
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Gentle correction only — preserve subtle gradients" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.15, "denoise_post_stretch": 0.20 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": "try", "start_amount": 0.15, "start_radius": 64, "reason": "Very gentle — reflection nebulae are smooth" },
-      "HDRMT": { "use": false, "reason": "No bright core. Subtle dust is the feature — HDRMT would flatten it." },
-      "LRGB": { "use": true, "lightness": 0.45, "saturation": 0.80 },
-      "Ha_injection": { "use": false, "reason": "Reflection nebulae don't emit Ha" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Gentle correction only \u2014 preserve subtle gradients"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.15,
+        "denoise_post_stretch": 0.2
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": "try",
+        "start_amount": 0.15,
+        "start_radius": 64,
+        "reason": "Very gentle \u2014 reflection nebulae are smooth"
+      },
+      "HDRMT": {
+        "use": false,
+        "reason": "No bright core. Subtle dust is the feature \u2014 HDRMT would flatten it."
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.45,
+        "saturation": 0.8
+      },
+      "Ha_injection": {
+        "use": false,
+        "reason": "Reflection nebulae don't emit Ha"
+      }
     },
     "saturation": {
-      "rgb_initial": 0.60,
+      "rgb_initial": 0.6,
       "composition_target": 0.65,
       "hue_selective": false,
       "max_p90": 0.55
@@ -320,13 +595,12 @@
       "max_bright_block_pct": 1.0
     },
     "stars": {
-      "screen_blend_strength": 1.00,
+      "screen_blend_strength": 1.0,
       "prominence": "prominent"
     },
     "notes": "Subtlety is everything. Blue reflection color must be preserved. Over-processing destroys the delicate dust structure. NXT must be very gentle. Brighter background needed to reveal faint nebulosity.",
     "learned_overrides": {}
   },
-
   "dark_nebula": {
     "description": "Dark nebula. Barnard 33 (Horsehead), LDN 1622, Barnard 68",
     "characteristics": {
@@ -341,20 +615,54 @@
       "headroom": 0.03
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Gentle — preserve background gradient that reveals silhouette" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.15, "denoise_post_stretch": 0.20 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": "try", "start_amount": 0.15, "start_radius": 96, "reason": "Very gentle — the dark region IS the subject" },
-      "HDRMT": { "use": false, "reason": "No bright core to compress" },
-      "LRGB": { "use": true, "lightness": 0.45, "saturation": 0.75 },
-      "Ha_injection": { "use": "try", "reason": "Often embedded in emission regions (Horsehead in IC 434)" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Gentle \u2014 preserve background gradient that reveals silhouette"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.15,
+        "denoise_post_stretch": 0.2
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": "try",
+        "start_amount": 0.15,
+        "start_radius": 96,
+        "reason": "Very gentle \u2014 the dark region IS the subject"
+      },
+      "HDRMT": {
+        "use": false,
+        "reason": "No bright core to compress"
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.45,
+        "saturation": 0.75
+      },
+      "Ha_injection": {
+        "use": "try",
+        "reason": "Often embedded in emission regions (Horsehead in IC 434)"
+      }
     },
     "saturation": {
-      "rgb_initial": 0.60,
+      "rgb_initial": 0.6,
       "composition_target": 0.65,
       "hue_selective": false,
       "max_p90": 0.55
@@ -363,13 +671,12 @@
       "max_bright_block_pct": 2.0
     },
     "stars": {
-      "screen_blend_strength": 1.00,
+      "screen_blend_strength": 1.0,
       "prominence": "balanced"
     },
     "notes": "The dark silhouette IS the subject. Background must be bright enough to see the dark nebula clearly. Do not crush shadows. Brighter stretch target essential.",
     "learned_overrides": {}
   },
-
   "supernova_remnant": {
     "description": "Supernova remnant. Veil (NGC 6960/6992), Simeis 147, IC 443",
     "characteristics": {
@@ -384,78 +691,72 @@
       "headroom": 0.05
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try", "reason": "Large field often has gradients" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try", "reason": "Often needed for green excess in SNR fields" },
-      "NXT": { "use": true, "denoise_linear": 0.20, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": true, "safe": true },
-      "LHE": { "use": true, "start_amount": 0.25, "start_radius": 64, "mask_blur": 8, "mask_clipLow": 0.06, "reason": "Enhances filament contrast" },
-      "HDRMT": { "use": false, "reason": "Faint filaments — HDRMT not needed" },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.70 },
-      "Ha_injection": { "use": true, "strength": 0.35, "reason": "Ha reveals filament structure beautifully" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try",
+        "reason": "Large field often has gradients"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try",
+        "reason": "Often needed for green excess in SNR fields"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.2,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": true,
+        "safe": true
+      },
+      "LHE": {
+        "use": true,
+        "start_amount": 0.25,
+        "start_radius": 64,
+        "mask_blur": 8,
+        "mask_clipLow": 0.06,
+        "reason": "Enhances filament contrast"
+      },
+      "HDRMT": {
+        "use": false,
+        "reason": "Faint filaments \u2014 HDRMT not needed"
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.5,
+        "saturation": 0.7
+      },
+      "Ha_injection": {
+        "use": true,
+        "strength": 0.35,
+        "reason": "Ha reveals filament structure beautifully"
+      }
     },
     "saturation": {
       "rgb_initial": 0.65,
       "composition_target": 0.75,
       "hue_selective": true,
-      "max_p90": 0.70
+      "max_p90": 0.7
     },
     "burn": {
       "max_bright_block_pct": 2.0
     },
     "stars": {
-      "screen_blend_strength": 0.80,
+      "screen_blend_strength": 0.8,
       "prominence": "subdued"
     },
     "notes": "Faint filaments are the primary target. Color contrast between OIII (blue/teal) and Ha (red) is key. Stars should be subdued to not overwhelm delicate filaments.",
     "learned_overrides": {}
   },
-
-  "star_cluster": {
-    "description": "Globular or open cluster. M13, M3, M5, NGC 884/869",
-    "characteristics": {
-      "typical_size": "medium",
-      "dynamic_range": "medium",
-      "has_bright_core": true,
-      "color_signature": "broadband",
-      "star_density": "dense"
-    },
-    "stretch": {
-      "target_median": 0.10,
-      "headroom": 0.08
-    },
-    "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.15, "denoise_post_stretch": 0.20 },
-      "SXT": { "use": false, "reason": "Stars ARE the subject — never remove them" },
-      "LHE": { "use": "try", "start_amount": 0.15, "reason": "Very gentle if at all — stars don't benefit from LHE" },
-      "HDRMT": { "use": "try", "inverted": true, "layers": 5, "reason": "Can help resolve dense core stars" },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.80 },
-      "Ha_injection": { "use": false }
-    },
-    "saturation": {
-      "rgb_initial": 0.65,
-      "composition_target": 0.70,
-      "hue_selective": false,
-      "max_p90": 0.55
-    },
-    "burn": {
-      "max_bright_block_pct": 8.0
-    },
-    "stars": {
-      "screen_blend_strength": 1.00,
-      "prominence": "prominent"
-    },
-    "notes": "Stars are the subject — star quality is everything. Star colors (blue, orange, yellow) must be preserved. Never run SXT. Gentle processing only. Dark background makes stars pop.",
-    "learned_overrides": {}
-  },
-
   "star_cluster_globular": {
     "description": "Globular cluster. M13, M3, M5, M92, M2, NGC 7006",
     "characteristics": {
@@ -466,25 +767,58 @@
       "star_density": "very_dense"
     },
     "stretch": {
-      "target_median": 0.10,
-      "headroom": 0.10
+      "target_median": 0.1,
+      "headroom": 0.1
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.15, "denoise_post_stretch": 0.20 },
-      "SXT": { "use": false, "reason": "Stars ARE the subject — never remove them" },
-      "LHE": { "use": "try", "start_amount": 0.10, "reason": "Very gentle — helps resolve core stars" },
-      "HDRMT": { "use": "try", "inverted": true, "layers": 5, "reason": "Essential for resolving dense core" },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.80 },
-      "Ha_injection": { "use": false }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.15,
+        "denoise_post_stretch": 0.2
+      },
+      "SXT": {
+        "use": false,
+        "reason": "Stars ARE the subject \u2014 never remove them"
+      },
+      "LHE": {
+        "use": "try",
+        "start_amount": 0.1,
+        "reason": "Very gentle \u2014 helps resolve core stars"
+      },
+      "HDRMT": {
+        "use": "try",
+        "inverted": true,
+        "layers": 5,
+        "reason": "Essential for resolving dense core"
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.5,
+        "saturation": 0.8
+      },
+      "Ha_injection": {
+        "use": false
+      }
     },
     "saturation": {
       "rgb_initial": 0.65,
-      "composition_target": 0.70,
+      "composition_target": 0.7,
       "hue_selective": false,
       "max_p90": 0.55
     },
@@ -492,13 +826,12 @@
       "max_bright_block_pct": 8.0
     },
     "stars": {
-      "screen_blend_strength": 1.00,
+      "screen_blend_strength": 1.0,
       "prominence": "prominent"
     },
-    "notes": "Dense core is the challenge — headroom and HDRMT help resolve individual stars. Star colors must be preserved. Dark background essential.",
+    "notes": "Dense core is the challenge \u2014 headroom and HDRMT help resolve individual stars. Star colors must be preserved. Dark background essential.",
     "learned_overrides": {}
   },
-
   "star_cluster_open": {
     "description": "Open cluster. NGC 884/869 (Double Cluster), M45 vicinity, M35",
     "characteristics": {
@@ -513,21 +846,51 @@
       "headroom": 0.05
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.15, "denoise_post_stretch": 0.20 },
-      "SXT": { "use": false, "reason": "Stars ARE the subject — never remove them" },
-      "LHE": { "use": false, "reason": "Open clusters don't benefit from LHE" },
-      "HDRMT": { "use": false, "reason": "No dense core to resolve" },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.80 },
-      "Ha_injection": { "use": false }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.15,
+        "denoise_post_stretch": 0.2
+      },
+      "SXT": {
+        "use": false,
+        "reason": "Stars ARE the subject \u2014 never remove them"
+      },
+      "LHE": {
+        "use": false,
+        "reason": "Open clusters don't benefit from LHE"
+      },
+      "HDRMT": {
+        "use": false,
+        "reason": "No dense core to resolve"
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.5,
+        "saturation": 0.8
+      },
+      "Ha_injection": {
+        "use": false
+      }
     },
     "saturation": {
       "rgb_initial": 0.65,
-      "composition_target": 0.70,
+      "composition_target": 0.7,
       "hue_selective": false,
       "max_p90": 0.55
     },
@@ -535,13 +898,12 @@
       "max_bright_block_pct": 8.0
     },
     "stars": {
-      "screen_blend_strength": 1.00,
+      "screen_blend_strength": 1.0,
       "prominence": "prominent"
     },
-    "notes": "Star colors and arrangement are the subject. Background nebulosity may be present — preserve it. Gentle processing.",
+    "notes": "Star colors and arrangement are the subject. Background nebulosity may be present \u2014 preserve it. Gentle processing.",
     "learned_overrides": {}
   },
-
   "mixed_field": {
     "description": "Mixed field or unknown object type. Default fallback profile.",
     "characteristics": {
@@ -556,29 +918,60 @@
       "headroom": 0.05
     },
     "tools": {
-      "GC": { "use": true },
-      "ABE": { "use": "try" },
-      "BXT": { "use": true, "correct_only": true },
-      "SPCC": { "use": true },
-      "SCNR": { "use": "try" },
-      "NXT": { "use": true, "denoise_linear": 0.18, "denoise_post_stretch": 0.25 },
-      "SXT": { "use": "try" },
-      "LHE": { "use": "try", "start_amount": 0.20, "start_radius": 64 },
-      "HDRMT": { "use": "try", "inverted": true, "layers": 5 },
-      "LRGB": { "use": true, "lightness": 0.50, "saturation": 0.80 },
-      "Ha_injection": { "use": "try" }
+      "GC": {
+        "use": true
+      },
+      "ABE": {
+        "use": "try"
+      },
+      "BXT": {
+        "use": true,
+        "correct_only": true
+      },
+      "SPCC": {
+        "use": true
+      },
+      "SCNR": {
+        "use": "try"
+      },
+      "NXT": {
+        "use": true,
+        "denoise_linear": 0.18,
+        "denoise_post_stretch": 0.25
+      },
+      "SXT": {
+        "use": "try"
+      },
+      "LHE": {
+        "use": "try",
+        "start_amount": 0.2,
+        "start_radius": 64
+      },
+      "HDRMT": {
+        "use": "try",
+        "inverted": true,
+        "layers": 5
+      },
+      "LRGB": {
+        "use": true,
+        "lightness": 0.5,
+        "saturation": 0.8
+      },
+      "Ha_injection": {
+        "use": "try"
+      }
     },
     "saturation": {
-      "rgb_initial": 0.60,
+      "rgb_initial": 0.6,
       "composition_target": 0.65,
       "hue_selective": false,
-      "max_p90": 0.60
+      "max_p90": 0.6
     },
     "burn": {
       "max_bright_block_pct": 3.0
     },
     "stars": {
-      "screen_blend_strength": 0.90,
+      "screen_blend_strength": 0.9,
       "prominence": "balanced"
     },
     "notes": "Conservative defaults. Agents should assess the field and adjust.",

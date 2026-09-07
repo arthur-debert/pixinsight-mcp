@@ -9,7 +9,7 @@
  * @param {object} config - Pipeline config
  * @returns {string} System prompt
  */
-export function buildGigaOrchestratorPrompt(brief, config) {
+export function buildGigaOrchestratorPrompt(brief, config, plan = { extractStars: { run: true } }) {
   const F = config.files;
   const channels = [];
   if (F.R) channels.push(`R: \`${F.R}\``);
@@ -294,6 +294,30 @@ Additional gates:
 ${hasIFN ? '- IFN (Integrated Flux Nebula) is a PRIMARY goal. Safe results = failure.' : ''}
 ${hasHIIRegions ? '- HII regions expected — ensure Ha emission features are visible.' : ''}
 
+${!plan.extractStars.run ? `
+# ======================================================================
+# THE STARS ARE THE SUBJECT — THERE IS NO STARLESS LAYER
+# ======================================================================
+
+Prep deliberately did NOT run StarXTerminator on this target: ${plan.extractStars.reason}
+
+What that changes:
+
+- There is **no separate star layer** and **no starless RGB or L**. Every view you
+  were given still contains its stars. Do not look for a stars view, and do not
+  call star_protected_blend or star_screen_blend — there is nothing to blend back.
+- **Do not run run_sxt yourself.** Extracting the stars would delete the subject.
+  The starless remainder of a star cluster is unresolved halo glow and extraction
+  residue, and every branch built on it is wasted work.
+- Branch A works on the image as it is. Judge detail by whether individual stars
+  in the core are RESOLVED and separated, not by texture in the background.
+- Branch B has no faint envelope to reveal beyond the cluster's outer stars.
+  Keep it to lifting the outer halo members out of the background.
+- Branch D is about the stars WITHIN the image: their colour, size and separation.
+  Use run_curves and saturation on the image itself, never stretch_stars, which
+  expects a linear extracted layer.
+- The check_star_quality gate is the primary measure here, not a side check.
+` : ''}
 # ======================================================================
 # PHASE 1 — DETERMINISTIC PREP (ALREADY DONE — DO NOT REPEAT)
 # ======================================================================
@@ -316,15 +340,13 @@ Skip directly to Phase 2.
    - run_spcc (color calibration)
    - run_background_neutralization
    - run_nxt (denoise=0.20, gentle)
-   - run_sxt (is_linear=true) → creates star layer
-   - seti_stretch (target=0.12 for galaxy, headroom=0.05)
+${plan.extractStars.run ? '   - run_sxt (is_linear=true) → creates star layer\n' : ''}   - seti_stretch (target=0.12 for galaxy, headroom=0.05)
    - run_nxt post-stretch (denoise=0.25)
 ${hasL ? `6. Linear processing on FILTER_L:
    - run_gradient_correction on FILTER_L
    - run_bxt correct_only=true on FILTER_L
    - run_nxt denoise=0.20 on FILTER_L
-   - run_sxt is_linear=true on FILTER_L (MANDATORY — L must be starless before enhancement)
-   - seti_stretch target=0.25, headroom=0.10 on FILTER_L` : ''}
+${plan.extractStars.run ? '   - run_sxt is_linear=true on FILTER_L (MANDATORY — L must be starless before enhancement)\n' : ''}   - seti_stretch target=0.25, headroom=0.10 on FILTER_L` : ''}
 ${hasHa ? `7. Linear processing on FILTER_Ha:
    - run_gradient_correction on FILTER_Ha
    - run_bxt correct_only=true on FILTER_Ha
@@ -333,10 +355,10 @@ ${hasHa ? `7. Linear processing on FILTER_Ha:
    - seti_stretch target=0.15 on FILTER_Ha` : ''}
 
 Save stable baselines:
-- save_variant for base RGB (stretched, starless)
-${hasL ? '- save_variant for base L (stretched, starless)' : ''}
-${hasHa ? '- save_variant for base Ha (stretched, starless)' : ''}
-- Stars layer stays open
+- save_variant for base RGB (stretched${plan.extractStars.run ? ', starless' : ', stars intact'})
+${hasL ? `- save_variant for base L (stretched${plan.extractStars.run ? ', starless' : ', stars intact'})` : ''}
+${hasHa ? `- save_variant for base Ha (stretched${plan.extractStars.run ? ', starless' : ', stars intact'})` : ''}
+${plan.extractStars.run ? '- Stars layer stays open' : ''}
 
 # ======================================================================
 # PHASE 2 — BRANCH GENERATION
@@ -515,7 +537,15 @@ ${hasHa ? `
 
 ## BRANCH D — STAR POLICY
 
-Work on star layer. Stars should be NATURAL, COLORFUL, and appropriately sized for the target.
+${!plan.extractStars.run ? `**There is no star layer on this target — the stars are still in the image.**
+Work on the image itself with run_curves, saturation curves and masks. Do NOT call
+stretch_stars or the blend tools; they expect a linear extracted layer that does not
+exist here. Judge with check_star_quality: FWHM, colour diversity and star count are
+the measure of this branch.
+
+Required candidates: stars_flat, stars_target, stars_saturated, stars_overdone
+Tools: run_curves, run_pixelmath, create_luminance_mask, apply_mask, check_star_quality, save_variant
+` : `Work on star layer. Stars should be NATURAL, COLORFUL, and appropriately sized for the target.`}
 
 **CRITICAL: Stars are delivered LINEAR from prep. You MUST call \`stretch_stars\` FIRST.**
 \`star_protected_blend\` will REFUSE an unstretched star layer.

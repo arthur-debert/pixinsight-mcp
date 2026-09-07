@@ -20,6 +20,7 @@ import { createLumMask } from '../ops/masks.mjs';
 import { savePreview } from '../ops/preview.mjs';
 import { cloneImage, closeImage, purgeUndoHistory, toViewId } from '../ops/image-mgmt.mjs';
 import { plateSolve, readAstrometry } from '../ops/astrometry.mjs';
+import { buildPrepPlan, describePrepPlan } from '../prep-plan.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const CACHE_DIR = path.join(os.homedir(), '.pixinsight-mcp', 'prep-cache');
@@ -67,6 +68,10 @@ function computeCacheKey(config, brief) {
   if (pp?.stretch) {
     hash.update(`stretch:${pp.stretch.target_median}:${pp.stretch.headroom}|`);
   }
+  // The plan decides which steps run at all, so two targets with identical
+  // masters and different classifications must not share a cache entry.
+  const plan = buildPrepPlan(brief);
+  hash.update(`plan:${plan.classification}:${describePrepPlan(plan)}|`);
   return hash.digest('hex').slice(0, 24);
 }
 
@@ -181,6 +186,11 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   const outputDir = opts.outputDir || '/tmp/prep';
   fs.mkdirSync(outputDir, { recursive: true });
 
+  // What this target's profile and traits say prep should do, rather than the
+  // one fixed sequence every category used to get.
+  const plan = buildPrepPlan(opts.brief);
+  log(`[PREP] Plan for ${plan.classification}: ${describePrepPlan(plan)}`);
+
   // Extract stretch parameters from processing profile (via brief)
   const brief = opts.brief;
   const profileStretch = brief?.processingProfile?.stretch || {};
@@ -241,6 +251,9 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
 
   const result = {
     targetName,
+    // Carried through so the agent's opening message and prompt describe the
+    // assets prep actually produced, not the ones it used to always produce.
+    plan,
     views: {},
     stats: {},
     previews: {},
@@ -551,19 +564,24 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     P.executeOn(ImageWindow.windowById('${targetName}').mainView);
   `, 'BXT sharpen on RGB');
 
-  // SXT — extract stars from linear RGB
-  log('  SXT (linear)...');
-  await pjsrOrDie(`
-    var P=new StarXTerminator;
-    P.stars=true;P.unscreen=false;P.overlap=0.20;
-    P.executeOn(ImageWindow.windowById('${targetName}').mainView);
-  `, 'SXT on RGB');
-  // Find star image
-  const postSxt = await ctx.listImages();
-  const starView = postSxt.find(i => i.id.includes('stars'));
-  if (starView) {
-    result.views.stars = starView.id;
-    log(`  Stars extracted: ${starView.id}`);
+  // SXT — extract stars from linear RGB, unless this target's stars are the
+  // subject. Removing them leaves a starless layer of nothing but halo glow and
+  // extraction residue, and the agent then spends its whole search on that.
+  if (plan.extractStars.run) {
+    log('  SXT (linear)...');
+    await pjsrOrDie(`
+      var P=new StarXTerminator;
+      P.stars=true;P.unscreen=false;P.overlap=0.20;
+      P.executeOn(ImageWindow.windowById('${targetName}').mainView);
+    `, 'SXT on RGB');
+    const postSxt = await ctx.listImages();
+    const starView = postSxt.find(i => i.id.includes('stars'));
+    if (starView) {
+      result.views.stars = starView.id;
+      log(`  Stars extracted: ${starView.id}`);
+    }
+  } else {
+    log(`  SXT skipped on RGB — ${plan.extractStars.reason}`);
   }
 
   // Seti stretch RGB (target from processing profile)
@@ -627,17 +645,20 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
       P.correct_only=false;P.sharpen_nonstellar=0.70;P.adjust_halos=0.00;P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
     `, 'BXT sharpen on L');
 
-    // SXT on L (starless)
-    log('  SXT on L (linear, starless)...');
-    await pjsrOrDie(`
-      var P=new StarXTerminator;
-      P.stars=true;P.unscreen=false;P.overlap=0.20;P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
-    `, 'SXT on L');
-    // Close L stars (we only use RGB stars)
-    const postLSxt = await ctx.listImages();
-    const lStars = postLSxt.find(i => i.id.includes('FILTER_L') && i.id.includes('stars'));
-    if (lStars) {
-      await ctx.pjsr(`var w=ImageWindow.windowById('${lStars.id}');if(!w.isNull)w.forceClose();`);
+    if (plan.extractStars.run) {
+      log('  SXT on L (linear, starless)...');
+      await pjsrOrDie(`
+        var P=new StarXTerminator;
+        P.stars=true;P.unscreen=false;P.overlap=0.20;P.executeOn(ImageWindow.windowById('FILTER_L').mainView);
+      `, 'SXT on L');
+      // Close the L star layer; only the RGB one is used downstream.
+      const postLSxt = await ctx.listImages();
+      const lStars = postLSxt.find(i => i.id.includes('FILTER_L') && i.id.includes('stars'));
+      if (lStars) {
+        await ctx.pjsr(`var w=ImageWindow.windowById('${lStars.id}');if(!w.isNull)w.forceClose();`);
+      }
+    } else {
+      log(`  SXT skipped on L — ${plan.extractStars.reason}`);
     }
 
     // Seti stretch L (brighter to extract faint detail, with headroom for HDRMT)
