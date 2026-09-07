@@ -818,10 +818,22 @@ function runWatcher() {
 
    var SHUTDOWN_FILE = BRIDGE_DIR + "/shutdown";
 
+   // Latched, because the sentinel file is CONSUMED by the check that finds it.
+   // The inner yield loops call this too, and their `break` leaves only the
+   // inner loop — so without a latch the outer loop's next check finds the file
+   // already deleted and carries on forever. The shutdown file could never stop
+   // the watcher; only Ctrl+F11 could, because console.abortRequested stays set.
+   var shutdownLatched = false;
+
    function shouldShutdown() {
-      if (console.abortRequested) return true;
+      if (shutdownLatched) return true;
+      if (console.abortRequested) {
+         shutdownLatched = true;
+         return true;
+      }
       if (File.exists(SHUTDOWN_FILE)) {
          try { File.remove(SHUTDOWN_FILE); } catch (e) {}
+         shutdownLatched = true;
          return true;
       }
       return false;

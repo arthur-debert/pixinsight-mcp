@@ -12,7 +12,8 @@
     "setup-bridge": "mkdir -p ~/.pixinsight-mcp/bridge/{commands,results,logs} ~/.pixinsight-mcp/catalog/recipes",
     "audit:params": "node scripts/pjsr-audit-params.mjs",
     "test": "node --test test/",
-    "lint:imports": "node scripts/check-imports.mjs"
+    "lint:imports": "node scripts/check-imports.mjs",
+    "stop": "node scripts/pi-stop.mjs"
   },
   "keywords": [
     "pixinsight",
