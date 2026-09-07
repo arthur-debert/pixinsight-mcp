@@ -10,8 +10,9 @@
  */
 export async function getStats(ctx, viewId) {
   const r = await ctx.pjsr(`
-    var v = ImageWindow.windowById('${viewId}').mainView;
-    var img = v.image;
+    var w = ImageWindow.windowById('${viewId}');
+    if (w.isNull) throw new Error('View not found: ${viewId}');
+    var img = w.mainView.image;
     var result = {};
     if (img.isColor) {
       var meds = [], mads = [];
@@ -36,8 +37,19 @@ export async function getStats(ctx, viewId) {
     result.max = img.maximum();
     JSON.stringify(result);
   `);
-  try { return JSON.parse(r.outputs?.consoleOutput || '{}'); }
-  catch { return { median: 0.01, mad: 0.001 }; }
+  if (r.status === 'error') {
+    throw new Error(`getStats(${viewId}): ${r.error?.message}`);
+  }
+  try {
+    return JSON.parse(r.outputs?.consoleOutput);
+  } catch {
+    // Returning plausible-looking numbers here would be the worst outcome: the
+    // quality gates and the agent both act on these values, and a fabricated
+    // median is indistinguishable from a measured one.
+    throw new Error(
+      `getStats(${viewId}) could not read the measurement PixInsight returned: ` +
+      `${JSON.stringify(r.outputs?.consoleOutput)?.slice(0, 200)}`);
+  }
 }
 
 /**
