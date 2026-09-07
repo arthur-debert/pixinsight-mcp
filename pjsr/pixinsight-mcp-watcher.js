@@ -792,7 +792,7 @@ function runWatcher() {
    console.noteln("  PixInsight MCP Watcher v" + WATCHER_VERSION);
    console.noteln("  Core:    " + coreVersionString() + " (PJSR V8)");
    console.noteln("  Bridge:  " + BRIDGE_DIR);
-   console.noteln("  Ctrl+F11 to abort");
+   console.noteln("  To stop:  npm run stop   (or the Stop PixInsight command file)");
    console.noteln("===========================================");
 
    // Touch every core API the command loop relies on, so a deprecation warning

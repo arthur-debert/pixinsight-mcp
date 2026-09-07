@@ -13,7 +13,8 @@
     "audit:params": "node scripts/pjsr-audit-params.mjs",
     "test": "node --test test/",
     "lint:imports": "node scripts/check-imports.mjs",
-    "stop": "node scripts/pi-stop.mjs"
+    "stop": "node scripts/pi-stop.mjs",
+    "shortcuts": "open shortcuts"
   },
   "keywords": [
     "pixinsight",
