@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 import { buildToolSet } from './tools.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MCP_SERVER_PATH = path.join(__dirname, 'mcp-agent-tools.mjs');
+const MCP_SERVER_PATH = path.join(__dirname, '../mcp/server.mjs');
 
 /**
  * MaxAgent — runs a Claude Code subprocess for each agent.
@@ -196,7 +196,7 @@ export class MaxAgent {
 
   /**
    * Write a temporary MCP config JSON file for this agent.
-   * Points to mcp-agent-tools.mjs with the correct agent name, store path, and brief path.
+   * Points at agents/mcp/server.mjs in pipeline mode for this agent.
    * @returns {string} Path to the generated config file
    */
   _writeMcpConfig() {
@@ -205,25 +205,20 @@ export class MaxAgent {
 
     const configPath = path.join(tmpDir, `mcp-config-${this.name}-${Date.now()}.json`);
 
-    // Build args for the MCP server process
-    const serverArgs = [MCP_SERVER_PATH, this.agentName];
+    // Pipeline mode: the agent name selects the tool set and turns on the state
+    // machine, turn budget and repair policies.
+    const serverArgs = [MCP_SERVER_PATH, '--agent', this.agentName];
 
-    // Add store base dir if available
     if (this.store?.baseDir) {
-      serverArgs.push(this.store.baseDir);
-    } else {
-      serverArgs.push('');
+      serverArgs.push('--store', this.store.baseDir);
     }
 
-    // Write brief to a temp file and pass path
     if (this.brief) {
       const briefPath = path.join(tmpDir, `brief-${this.name}-${Date.now()}.json`);
       fs.writeFileSync(briefPath, JSON.stringify(this.brief, null, 2));
-      serverArgs.push(briefPath);
-      // Schedule cleanup (brief file is small, cleanup is best-effort)
+      serverArgs.push('--brief', briefPath);
+      // Cleanup is best-effort; the file is small.
       this._briefPath = briefPath;
-    } else {
-      serverArgs.push('');
     }
 
     const config = {

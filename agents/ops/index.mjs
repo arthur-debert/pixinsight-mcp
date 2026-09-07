@@ -10,6 +10,7 @@ export { runGC, runABE, runPerChannelABE, runSCNR } from './gradient.mjs';
 export { cloneImage, restoreFromClone, closeImage, purgeUndoHistory, toViewId } from './image-mgmt.mjs';
 export { saveCheckpoint, loadCheckpoint } from './checkpoint.mjs';
 export { plateSolve, readAstrometry, copyAstrometryFromFile } from './astrometry.mjs';
+export { launch, terminatePixInsight, ensureBridgeDirectories, PI_BIN, WATCHER_PATH, BRIDGE_DIR, STDOUT_LOG } from './pixinsight.mjs';
 export { checkStarQuality, checkRinging, checkSharpness, checkCoreBurning, scanBurntRegions, checkSaturation, checkTonalPresence, checkStarLayerIntegrity, checkBrightChroma, checkHighlightTexture } from './quality-gates.mjs';
 export { measureSubjectDetail, locateSubjectROI } from './subject-metrics.mjs';
 export { multiScaleEnhance, shellDetailEnhance } from './compound-enhance.mjs';

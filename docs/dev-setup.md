@@ -2,8 +2,9 @@
 
 ## Prerequisites
 
-- **Node.js** >= 18
-- **PixInsight** >= 1.8.9 (with scripting support)
+- **Node.js** >= 22
+- **PixInsight** >= 1.9.4 (this fork targets the V8 PJSR runtime; see
+  [the port notes](pixinsight-1.9.4-v8-port.md))
 - **Claude Desktop** or **Claude Code** (for testing the MCP server)
 - **macOS** (primary development platform; Linux/Windows adaptations noted where different)
 
@@ -24,14 +25,11 @@ Default installation paths:
 git clone https://github.com/aescaffre/pixinsight-mcp.git
 cd pixinsight-mcp
 
-# Install dependencies (once package.json exists)
+# Install dependencies
 npm install
 
-# Build
-npm run build
-
-# Create bridge directory
-mkdir -p ~/.pixinsight-mcp/bridge/{commands,results,logs}
+# Create the bridge directories
+npm run setup-bridge
 ```
 
 ## Running PixInsight in Automation Mode
@@ -46,46 +44,66 @@ mkdir -p ~/.pixinsight-mcp/bridge/{commands,results,logs}
   -n=1 --automation-mode
 ```
 
-## Loading the Watcher Script
+## Starting PixInsight and the watcher
 
-1. Open PixInsight
-2. Open the Script Editor (Script > Script Editor)
-3. Open `pjsr/pixinsight-mcp-watcher.js` from this repo
-4. Click **Run** (F9)
-5. The watcher will start polling for commands in the Process Console
-
-Alternatively, auto-load on startup:
+One command does the whole thing — it starts PixInsight in automation mode,
+loads the watcher, and waits until the watcher actually answers:
 
 ```bash
-/Applications/PixInsight/PixInsight.app/Contents/MacOS/PixInsight \
-  -n --automation-mode \
-  -r="/path/to/pixinsight-mcp/pjsr/pixinsight-mcp-watcher.js"
+npm run launch          # node scripts/pi-launch.mjs
+npm run launch -- --restart
+npm run launch -- --windowed    # show the UI; see the warning below
 ```
 
-## Configuring Claude Desktop
+Automation mode is the default for a reason. In windowed mode a PJSR error
+opens a modal dialog that nothing on the Node side can dismiss: PixInsight sits
+at 0% CPU looking healthy while every bridge call times out with no explanation.
+Use `--windowed` only when you want to watch the processing happen.
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+You rarely need to run this by hand. The MCP server starts PixInsight itself
+when nothing is listening.
+
+Check the state at any time:
+
+```bash
+npm run doctor          # install, modules, bridge, watcher, live round trip
+```
+
+## Configuring an MCP client
+
+The server is `agents/mcp/server.mjs`. There is no build step — it runs from
+source.
+
+Claude Code:
+
+```bash
+claude mcp add pixinsight node /absolute/path/to/pixinsight-mcp/agents/mcp/server.mjs
+```
+
+Claude Desktop, in `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "pixinsight": {
       "command": "node",
-      "args": ["/absolute/path/to/pixinsight-mcp/build/index.js"]
+      "args": ["/absolute/path/to/pixinsight-mcp/agents/mcp/server.mjs"]
     }
   }
 }
 ```
 
-Restart Claude Desktop after editing.
+Useful flags:
 
-## Configuring Claude Code
+| Flag | Meaning |
+|---|---|
+| `--target "M81"` | Classify the target up front, so quality-gate thresholds match its type |
+| `--tools SET` | Serve one agent's tool set instead of all of them |
+| `--no-auto-launch` | Fail rather than starting PixInsight; you start it yourself |
 
-Add to your project's `.mcp.json` or use the CLI:
-
-```bash
-claude mcp add pixinsight node /absolute/path/to/pixinsight-mcp/build/index.js
-```
+The server refuses to start when PixInsight or an XTerminator module is missing,
+rather than serving tools that cannot work. Once running, `pixinsight_status`
+reports the backend state and how to recover from it.
 
 ## Testing the Bridge Manually
 
@@ -111,35 +129,20 @@ sleep 1
 cat ~/.pixinsight-mcp/bridge/results/test-001.json
 ```
 
-## Project Structure (Planned)
-
-```
-pixinsight-mcp/
-  docs/                    # Knowledge base (you are here)
-  src/
-    index.ts               # MCP server entry point
-    tools/                 # Tool implementations
-    bridge/                # File bridge client (write commands, read results)
-    types.ts               # Shared type definitions
-  pjsr/
-    pixinsight-mcp-watcher.js   # PJSR watcher script for PixInsight
-    lib/                        # PJSR helper modules
-  build/                   # Compiled output
-  package.json
-  tsconfig.json
-```
-
 ## Troubleshooting
 
 ### MCP server not connecting
+- Run `npm run doctor` first; the server refuses to start on the same problems.
 - Check Claude Desktop logs: `~/Library/Logs/Claude/`
-- Ensure `node` is in PATH or use absolute path in config
-- Verify the build output exists at the configured path
+- Ensure `node` is in PATH, or use an absolute path in the config.
 
 ### Watcher not picking up commands
-- Check the bridge directory path matches in both server and watcher
-- Verify PixInsight's Process Console for watcher output/errors
-- Ensure file permissions allow both processes to read/write
+- `npm run doctor` separates the cases: PixInsight not running, watcher never
+  loaded, watcher busy inside a long process.
+- A watcher that never loaded is almost always a PJSR error. Run
+  `npm run lint:pjsr`, which catches the three that produce no message at all.
+- Startup output the Process Console would have shown is written to
+  `~/.pixinsight-mcp/bridge/logs/watcher-startup.log`.
 
 ### PixInsight process errors
 - Check `~/.pixinsight-mcp/bridge/logs/` for detailed logs

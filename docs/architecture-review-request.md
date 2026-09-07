@@ -29,7 +29,7 @@ An autonomous deep sky astrophotography processing pipeline. A Claude Opus 4.6 (
                     └──────────────┬───────────────────┘
                                    │ MCP (stdio)
                     ┌──────────────▼───────────────────┐
-                    │  mcp-agent-tools.mjs (MCP server) │
+                    │  agents/mcp/server.mjs (MCP server)  │
                     │                                  │
                     │  62 tools served via MCP protocol │
                     │  Trace collector (trace.jsonl)    │

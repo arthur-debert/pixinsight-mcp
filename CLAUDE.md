@@ -6,16 +6,20 @@ drives PixInsight's PJSR scripting engine via file-based IPC to process astronom
 through a configurable, branching pipeline (HaRGB, HaLRGB, LRGB workflows).
 
 ## Environment
-- Node.js: `/Users/aescaffre/.local/node-v22.13.1-darwin-arm64/bin` (add to PATH)
-- PixInsight: `/Applications/PixInsight/`
+- Node.js >= 22
+- PixInsight 1.9.4+ at `/Applications/PixInsight/` — the V8 PJSR runtime
 - Bridge: `~/.pixinsight-mcp/bridge/` (file-based IPC)
-- PJSR: ECMAScript 5 only (no let/const/arrow functions)
+- PJSR files need `#engine v8` and cannot include the pjsr .jsh headers.
+  Read `docs/pixinsight-1.9.4-v8-port.md` before touching anything under `pjsr/`.
 
 ## Key Commands
 ```bash
-# Build
-export PATH="/Users/aescaffre/.local/node-v22.13.1-darwin-arm64/bin:$PATH"
-cd /Users/aescaffre/pixinsight-mcp && npm run build
+# Check everything is ready, and start PixInsight with the watcher
+npm run doctor
+npm run launch
+
+# Lint PJSR before running it — the failures it catches are silent
+npm run lint:pjsr
 
 # Run pipeline
 node scripts/run-pipeline.mjs --config /path/to/config.json
@@ -29,11 +33,11 @@ node editor/server.mjs
 
 ## Project Structure
 ```
-scripts/run-pipeline.mjs  — Main pipeline script (~1600 lines)
+agents/mcp/server.mjs      — The MCP server (standalone and pipeline modes)
+scripts/run-pipeline.mjs  — Legacy pipeline script (~1600 lines)
 editor/default-config.json — Default pipeline configuration
 editor/index.html          — Web UI for pipeline editor
 editor/server.mjs          — Editor backend (Express.js)
-src/                       — MCP server TypeScript source
 ```
 
 ## Skills
@@ -65,3 +69,6 @@ Do this proactively — don't wait to be asked. The goal is that skills always r
 - Close images aggressively to manage PixInsight memory
 - Do NOT use star erosion/threshold — creates artifacts. Non-linear extraction is clean.
 - GHS .dylib is not installed — use PixelMath fallback
+- `SomeProcess.prototype.CONST` is `undefined` under V8; use `SomeProcess.CONST`
+- Unknown process parameters are accepted silently — check `Object.keys(new P)`
+- A slash-star pair inside a `//` comment stops a PJSR file loading, silently

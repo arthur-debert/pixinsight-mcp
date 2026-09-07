@@ -252,7 +252,11 @@ Successfully processed with zero target-specific code changes between runs:
 
 ## Requirements
 
-- **PixInsight** (tested with 1.8.9+) with the following third-party modules installed:
+- **PixInsight 1.9.4 "Lockhart" or later.** 1.9.4 replaced the SpiderMonkey
+  JavaScript engine with V8 and ships no legacy engine on Apple Silicon; this
+  fork targets the V8 runtime and will not load on earlier versions. See
+  [docs/pixinsight-1.9.4-v8-port.md](docs/pixinsight-1.9.4-v8-port.md).
+  Required third-party modules:
   - BlurXTerminator (BXT)
   - NoiseXTerminator (NXT)
   - StarXTerminator (SXT)
@@ -267,15 +271,15 @@ Successfully processed with zero target-specific code changes between runs:
 ## Quick Start
 
 ```bash
-# 1. Build the MCP server
-export PATH="/Users/aescaffre/.local/node-v22.13.1-darwin-arm64/bin:$PATH"
-cd /Users/aescaffre/pixinsight-mcp && npm run build
+# 1. Install dependencies (no build step — the server runs from source)
+cd /path/to/pixinsight-mcp && npm install && npm run setup-bridge
 
-# 2. Start PixInsight and load the watcher script:
-#    Script > Run Script... > pjsr/pixinsight-mcp-watcher.js
+# 2. Check the installation: PixInsight, XTerminator modules, bridge, watcher
+npm run doctor
 
-# 3. Verify bridge connectivity
-node scripts/ping-watcher.mjs
+# 3. Start PixInsight with the watcher loaded (the MCP server also does this
+#    on its own when nothing is listening)
+npm run launch
 
 # 4. Create a config JSON (see Config Format below) and run the GIGA pipeline
 node agents/llm/giga-run.mjs --config /path/to/config.json
@@ -286,6 +290,9 @@ node agents/llm/giga-run.mjs --config /path/to/config.json --intent "push IFN ha
 # 6. Dry run (classification + brief only, no processing)
 node agents/llm/giga-run.mjs --config /path/to/config.json --dry-run
 ```
+
+To drive PixInsight from a chat rather than through the pipeline, point an MCP
+client at `agents/mcp/server.mjs` — see [docs/dev-setup.md](docs/dev-setup.md).
 
 The legacy deterministic pipeline (no LLM) is still available:
 ```bash
@@ -329,13 +336,16 @@ node scripts/run-pipeline.mjs --config /path/to/config.json --restart-from stret
 
 ```
 agents/
+  mcp/
+    server.mjs                  -- THE MCP server (standalone and pipeline modes)
+    preflight.mjs               -- Readiness checks, auto-launch, status reporting
+    pipeline-governance.mjs     -- State machine, budget, repair policies (pipeline only)
   llm/
     giga-run.mjs               -- Main entry point (GIGA pipeline runner)
     deterministic-prep.mjs      -- Phase 1: scripted linear processing with caching
     engine-max.mjs              -- Claude Max subprocess engine (claude -p)
-    tools.mjs                   -- 53 MCP tool definitions and handlers
+    tools.mjs                   -- MCP tool definitions and handlers
     vision.mjs                  -- Diagnostic view generation and image messaging
-    mcp-agent-tools.mjs         -- MCP server for agent tool access
     prompts/
       giga-orchestrator.mjs     -- System prompt builder (generic, trait-driven)
   ops/
@@ -348,6 +358,8 @@ agents/
     preview.mjs                 -- JPEG preview export
     image-mgmt.mjs              -- Clone, close, purge operations
     checkpoint.mjs              -- Checkpoint save/restore
+    astrometry.mjs              -- Plate solving and WCS transfer
+    pixinsight.mjs              -- Starting and stopping the application
     index.mjs                   -- Ops module aggregator
   memory/
     hierarchical-memory.mjs     -- 5-level memory store with auto-promotion optimizer
@@ -357,12 +369,13 @@ agents/
   artifact-store.mjs            -- Per-run artifact management
   processing-profiles.json      -- Default processing parameters per target type
 scripts/
+  pi-doctor.mjs                 -- Preflight: install, modules, bridge, watcher, round trip
+  pi-launch.mjs                 -- Start PixInsight and wait for the watcher to answer
+  pjsr-lint.mjs                 -- Catches the PJSR mistakes PixInsight reports silently
   run-pipeline.mjs              -- Legacy deterministic pipeline (~2000 lines)
   ping-watcher.mjs              -- Bridge connectivity test
 pjsr/
   pixinsight-mcp-watcher.js     -- PixInsight-side watcher (ECMAScript 5)
-src/
-  -- MCP server TypeScript source (for IDE/tool integration)
 editor/
   server.mjs                    -- Web UI backend for config editing
   index.html                    -- Web UI frontend
