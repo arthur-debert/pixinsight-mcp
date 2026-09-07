@@ -31,22 +31,46 @@ if (!before.ok && before.reason === 'no-heartbeat') {
 fs.writeFileSync(path.join(BRIDGE_DIR, 'shutdown'), '');
 console.log('Shutdown signal written. Waiting for the watcher to notice…');
 
-for (let i = 0; i < 20; i++) {
+// The loop only checks between commands, so a watcher part-way through a
+// twenty-minute BlurXTerminator run will not stop until that finishes. Waiting
+// is the right behaviour — interrupting mid-process would leave the image in an
+// unknown state — but it must be reported as waiting, not as a failure.
+const IDLE_PATIENCE_MS = 10_000;
+const startedAt = Date.now();
+let announcedBusy = false;
+
+for (;;) {
   await delay(500);
+
   if (!fs.existsSync(path.join(BRIDGE_DIR, 'watcher.json'))) {
     console.log('Watcher stopped. PixInsight is still running with its images open.');
     process.exit(0);
   }
+
+  const now = watcherStatus();
+  if (now.reason === 'busy') {
+    if (!announcedBusy) {
+      announcedBusy = true;
+      console.log(
+        `The watcher is busy running ${now.heartbeat?.currentCommand?.tool ?? 'a command'}. ` +
+        `It will stop when that finishes — waiting rather than interrupting it.`);
+    }
+    continue;
+  }
+
+  // Idle, and still not gone. That is the failure worth reporting.
+  if (Date.now() - startedAt > IDLE_PATIENCE_MS) break;
 }
 
 try { fs.unlinkSync(path.join(BRIDGE_DIR, 'shutdown')); } catch {}
 
 if (!force) {
   console.error(
-    '\nThe watcher did not stop.\n' +
-    'A watcher started before the shutdown latch was fixed cannot be stopped by the sentinel.\n' +
-    'Either press Ctrl+F11 with PixInsight\'s Process Console focused, or re-run with --force\n' +
-    'to terminate PixInsight (open images are lost; anything already saved to disk is not).');
+    '\nThe watcher is idle and did not stop.\n' +
+    'A watcher started before the shutdown latch was fixed cannot be stopped by the sentinel:\n' +
+    'its inner yield loop consumed the file and kept going. Either press Ctrl+F11 with\n' +
+    'PixInsight\'s Process Console focused, or re-run with --force to terminate PixInsight\n' +
+    '(open images are lost; anything already saved to disk is not).');
   process.exit(1);
 }
 
