@@ -21,6 +21,31 @@ const AGENT_PREFIXES = {
   selection: '08_selection'
 };
 
+/**
+ * Where a run's final image is written, named so the run that produced it can
+ * always be found again.
+ *
+ * A fixed filename means every run silently replaces the last, and three runs in
+ * a morning leave one file and no way to tell which run made it. The run id
+ * already carries the date and a short hash, so these sort chronologically and
+ * each names the run directory that can explain it.
+ *
+ * @param {string} outputDir  where the config says results go
+ * @param {string} targetName sanitised target name
+ * @param {string} runId      e.g. "run_2026-09-07_675ddd6a"
+ */
+export function runStampedOutputPaths(outputDir, targetName, runId) {
+  const stamp = String(runId).replace(/^run_/, '');
+  return {
+    stamp,
+    xisf: path.join(outputDir, `${targetName}_${stamp}.xisf`),
+    png: path.join(outputDir, `${targetName}_${stamp}.png`),
+    // The data drive is exFAT and has no symlinks, so "latest" is a text file
+    // naming the newest rather than a link to it.
+    latest: path.join(outputDir, `${targetName}_latest.txt`),
+  };
+}
+
 export class ArtifactStore {
   /**
    * @param {string} runId - Unique run identifier (or auto-generated)

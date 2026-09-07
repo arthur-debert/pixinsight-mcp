@@ -24,7 +24,7 @@ import { execSync } from 'child_process';
 import { createBridgeContext } from '../ops/bridge.mjs';
 import { toViewId } from '../ops/image-mgmt.mjs';
 import { getStats, measureUniformity } from '../ops/stats.mjs';
-import { ArtifactStore } from '../artifact-store.mjs';
+import { ArtifactStore, runStampedOutputPaths } from '../artifact-store.mjs';
 import { generateBrief } from '../classifier.mjs';
 import { MaxAgent } from './engine-max.mjs';
 import { buildToolSet } from './tools.mjs';
@@ -312,8 +312,8 @@ Use \`check_highlight_texture\` with reference checkpoints to verify texture pre
   const outputDir = config.files?.outputDir || path.join(home, 'Desktop');
   fs.mkdirSync(outputDir, { recursive: true });
 
-  const xisfPath = path.join(outputDir, `${targetName}_giga.xisf`);
-  const pngPath = path.join(outputDir, `${targetName}_giga.png`);
+  const { xisf: xisfPath, png: pngPath, latest: latestPath } =
+    runStampedOutputPaths(outputDir, targetName, store.runId);
 
   // PRIMARY PATH: read final-selection.json (written by finish tool)
   let finalSelection = store.readFinalSelection();
@@ -400,6 +400,13 @@ Use \`check_highlight_texture\` with reference checkpoints to verify texture pre
       console.log(`  ${r.outputs?.consoleOutput || 'done'}`);
       console.log(`  Saved: ${xisfPath}`);
       console.log(`  Saved: ${pngPath}`);
+      try {
+        fs.writeFileSync(latestPath,
+          `${path.basename(xisfPath)}\n${path.basename(pngPath)}\n` +
+          `run ${store.runId}\nfinished ${new Date().toISOString()}\n`);
+      } catch (e) {
+        console.log(`  (could not write ${latestPath}: ${e.message})`);
+      }
     } else if (finalSelection) {
       console.error(`  Export error: variant XISF not found at ${finalSelection.variant_path}`);
     } else {
