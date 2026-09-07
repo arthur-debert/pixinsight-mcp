@@ -3,6 +3,24 @@
 // ============================================================================
 
 /**
+ * Turn an arbitrary target name into a valid PixInsight view identifier.
+ *
+ * View ids follow C identifier rules: letters, digits and underscores, never
+ * starting with a digit. Passing anything else to ImageWindow.windowById()
+ * throws under the V8 runtime — with the message "undefined" and no other
+ * detail — so a target called "NGC 2808" takes down every step that touches its
+ * view, several stages after the name was set.
+ */
+export function toViewId(name, fallback = 'Target') {
+  const cleaned = String(name ?? '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // strip accents
+    .replace(/[^A-Za-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  if (!cleaned) return fallback;
+  return /^[0-9]/.test(cleaned) ? '_' + cleaned : cleaned;
+}
+
+/**
  * Clone an open image to a new hidden window (in-memory, no disk I/O).
  */
 export async function cloneImage(ctx, sourceId, cloneId) {

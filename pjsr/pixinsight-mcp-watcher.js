@@ -26,6 +26,26 @@
 //     rest of the file, and the load fails with no message at all. Never write
 //     a glob like "pjsr" slash star ".jsh" in a comment here.
 
+// ----------------------------------------------------------------------------
+// Astrometry
+//
+// PixInsight 1.9.4 ships a V8 port of ImageSolver under src/scripts/ImageSolver.
+// The older AdP copy this watcher used to pull in was never ported and cannot
+// load here at all.
+//
+// Only the engine is included, never ImageSolverDialog.js: the dialog fails to
+// load in automation mode, and it takes the whole watcher down with it.
+// ----------------------------------------------------------------------------
+
+#define VERSION "6.4.1"
+#define TITLE "ImageSolver"
+#define SOLVER_SETTINGS_MODULE "ImageSolver"
+#define SETTINGS_MODULE "ImageSolver"
+
+#include <pjsr/astrometry/AstrometricMetadata.js>
+#include <pjsr/astrometry/AstronomicalCatalogs.js>
+#include "/Applications/PixInsight/src/scripts/ImageSolver/ImageSolverEngine.js"
+
 // ============================================================================
 // Configuration
 // ============================================================================

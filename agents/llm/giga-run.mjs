@@ -22,6 +22,7 @@ if (fs.existsSync(envPath)) {
 import { execSync } from 'child_process';
 
 import { createBridgeContext } from '../ops/bridge.mjs';
+import { toViewId } from '../ops/image-mgmt.mjs';
 import { getStats, measureUniformity } from '../ops/stats.mjs';
 import { ArtifactStore } from '../artifact-store.mjs';
 import { generateBrief } from '../classifier.mjs';
@@ -302,7 +303,9 @@ Use \`check_highlight_texture\` with reference checkpoints to verify texture pre
   // EXPORT: Artifact-based (not view-name-based)
   // Source of truth: final-selection.json written by the finish tool
   // ================================================================
-  const targetName = config.files?.targetName || 'Target';
+  // Same sanitising as the view ids: several PJSR processes, StarAlignment above
+  // all, mishandle spaces in output paths.
+  const targetName = toViewId(config.files?.targetName || 'Target');
   const outputDir = config.files?.outputDir || path.join(home, 'Desktop');
   fs.mkdirSync(outputDir, { recursive: true });
 

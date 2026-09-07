@@ -1,0 +1,18 @@
+{
+  "files": {
+    "targetName": "NGC 2808",
+    "sourceFolder": "/Volumes/T7/astrophotography/targets/third-parties/ngc_2808_d12ece927e8e441294e578bdf04b3944/integrated/master",
+    "L": "/Volumes/T7/astrophotography/targets/third-parties/ngc_2808_d12ece927e8e441294e578bdf04b3944/integrated/master/masterLight_BIN-1_3056x3056_EXPOSURE-600.00s_FILTER-Luminance_mono_autocrop.xisf",
+    "R": "/Volumes/T7/astrophotography/targets/third-parties/ngc_2808_d12ece927e8e441294e578bdf04b3944/integrated/master/masterLight_BIN-1_3056x3056_EXPOSURE-600.00s_FILTER-Red_mono_autocrop.xisf",
+    "G": "/Volumes/T7/astrophotography/targets/third-parties/ngc_2808_d12ece927e8e441294e578bdf04b3944/integrated/master/masterLight_BIN-1_3056x3056_EXPOSURE-600.00s_FILTER-Green_mono_autocrop.xisf",
+    "B": "/Volumes/T7/astrophotography/targets/third-parties/ngc_2808_d12ece927e8e441294e578bdf04b3944/integrated/master/masterLight_BIN-1_3056x3056_EXPOSURE-600.00s_FILTER-Blue_mono_autocrop.xisf",
+    "Ha": "",
+    "outputDir": "/Volumes/T7/astrophotography/targets/third-parties/ngc_2808_d12ece927e8e441294e578bdf04b3944/agentic",
+    "channelSwap": ""
+  },
+  "aestheticPreferences": {
+    "noiseLevel": "very_clean",
+    "glow": "moderate",
+    "starPresence": "prominent"
+  }
+}

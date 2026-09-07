@@ -18,7 +18,8 @@ import { setiStretch } from '../ops/stretch.mjs';
 import { runGC } from '../ops/gradient.mjs';
 import { createLumMask } from '../ops/masks.mjs';
 import { savePreview } from '../ops/preview.mjs';
-import { cloneImage, closeImage, purgeUndoHistory } from '../ops/image-mgmt.mjs';
+import { cloneImage, closeImage, purgeUndoHistory, toViewId } from '../ops/image-mgmt.mjs';
+import { plateSolve, readAstrometry } from '../ops/astrometry.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const CACHE_DIR = path.join(os.homedir(), '.pixinsight-mcp', 'prep-cache');
@@ -168,7 +169,13 @@ async function saveToCache(ctx, config, cacheKey, result, log) {
 export async function runDeterministicPrep(ctx, config, opts = {}) {
   const log = opts.log || console.log;
   const F = config.files;
-  const targetName = F.targetName || 'Target';
+  // Every view in this pipeline is addressed by the target name, so it has to be
+  // a legal PixInsight identifier before it reaches windowById().
+  const displayName = F.targetName || 'Target';
+  const targetName = toViewId(displayName);
+  if (targetName !== displayName) {
+    log(`  Target "${displayName}" is not a valid view identifier; using "${targetName}" for view ids.`);
+  }
   const hasL = !!(F.L?.trim());
   const hasHa = !!(F.Ha?.trim());
   const outputDir = opts.outputDir || '/tmp/prep';
@@ -382,6 +389,15 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   if (newColor) {
     if (newColor.id !== targetName) {
       await ctx.pjsr(`ImageWindow.windowById('${newColor.id}').mainView.id='${targetName}';`);
+      // PixInsight rejects an illegal identifier by keeping the old one. Left
+      // unchecked, the mismatch surfaces stages later as an "undefined" error
+      // from the first windowById() call that uses the name.
+      const renamed = (await ctx.listImages()).some(i => i.id === targetName);
+      if (!renamed) {
+        const ids = (await ctx.listImages()).map(i => i.id).join(', ');
+        throw new Error(
+          `Could not rename the combined RGB view to "${targetName}". Open views: ${ids}`);
+      }
     }
     log(`  Combined → ${targetName} (${newColor.width}x${newColor.height})`);
   } else {
@@ -446,41 +462,27 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   log('  ' + (hasWCS ? 'WCS copied from R master' : 'No WCS in R master — will plate solve'));
 
   if (!hasWCS) {
-    // Plate solve using ImageSolver with coordinates from FITS headers
-    log('  Plate solving with ImageSolver...');
-    // Read RA/Dec from the target's keywords (copied from R master above)
-    const solveR = await ctx.pjsr(`
-      var w = ImageWindow.windowById('${targetName}');
-      // Extract RA/Dec from keywords
-      var ra = 0, dec = 0, focal = 0;
-      var kw = w.keywords;
-      for (var i = 0; i < kw.length; i++) {
-        if (kw[i].name === 'RA') ra = parseFloat(kw[i].value);
-        if (kw[i].name === 'DEC') dec = parseFloat(kw[i].value);
-        if (kw[i].name === 'FOCALLEN') focal = parseFloat(kw[i].value);
-      }
-      // Compute pixel scale: 206.265 * pixelSize(um) / focal(mm)
-      // For drizzled data, effective pixel size may be halved
-      var pixSize = 1.88; // from XPIXSZ header, but drizzle may change this
-      var pixScale = focal > 0 ? 206.265 * pixSize / focal : 0.84; // fallback
-
-      var P = new ImageSolver;
-      P.centerRA = ra;
-      P.centerDec = dec;
-      P.pixelSize = pixSize;
-      P.focalLength = focal;
-      P.resolution = pixScale;
-      P.autoFlip = true;
-      P.catalogMode = 1;
-      P.catalog = 'GaiaDR3';
-      P.limitMagnitude = 14;
-      P.distortionCorrection = true;
-      P.projectionSystem = ImageSolver.Gnomonic;
-      P.executeOn(w.mainView);
-      w.astrometricSolution ? 'SOLVED' : 'SOLVE_FAILED';
-    `);
-    const solved = (solveR.outputs?.consoleOutput || '').includes('SOLVED');
-    log('  Plate solve: ' + (solved ? 'SUCCESS' : 'FAILED (SPCC may not work)'));
+    // Stacking commonly drops the WCS the calibrated frames carried, so solve
+    // from scratch. The solver needs the optics: a master without FOCALLEN
+    // sends it to a 1000mm / 7.4µm default that fails for most rigs, so the
+    // config can state them.
+    log('  No WCS to copy — plate solving...');
+    const optics = config.optics || {};
+    const known = await readAstrometry(ctx, targetName);
+    const focalLengthMm = optics.focalLengthMm ?? known.focalLengthMm ?? null;
+    const pixelSizeUm = optics.pixelSizeUm ?? known.pixelSizeUm ?? null;
+    if (!focalLengthMm) {
+      log('    No FOCALLEN in the headers and no optics.focalLengthMm in the config —');
+      log('    the solver will use its 1000mm default, which usually fails. Add');
+      log('    "optics": { "focalLengthMm": N, "pixelSizeUm": N } to the config.');
+    }
+    const solve = await plateSolve(ctx, targetName, {
+      focalLengthMm,
+      pixelSizeUm,
+      catalog: optics.catalog || 'GaiaDR3',
+    });
+    log('  Plate solve: ' + (solve.solved ? 'SUCCESS — ' + solve.detail
+                                          : 'FAILED — ' + solve.detail + ' (SPCC will be skipped)'));
   }
 
   // SPCC with equipment-specific filters + QE from equipment.json

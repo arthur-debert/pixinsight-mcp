@@ -15,6 +15,7 @@ import {
   measureSubjectDetail, locateSubjectROI,
   multiScaleEnhance, shellDetailEnhance,
   extractPseudoOIII, continuumSubtractHa, dynamicNarrowbandBlend, createSyntheticLuminance, createZoneMasks, createAdaptiveZoneMasks, continuousClamp,
+  plateSolve, readAstrometry,
 } from '../ops/index.mjs';
 import { checkHardConstraints, statsToScores, computeAggregate } from '../scoring.mjs';
 import { jpegToContentBlock } from './vision.mjs';
@@ -657,38 +658,37 @@ const TOOL_CATALOG = {
     category: 'calibration',
     definition: {
       name: 'run_plate_solve',
-      description: 'Run ImageSolver to add an astrometric solution (WCS) to an image. Required before SPCC. Uses online catalog (requires internet).',
+      description: 'Add an astrometric solution (WCS) to an image with ImageSolver. Required before SPCC, and after BlurXTerminator, which strips the solution. Give focal_length_mm and pixel_size_um when the image has no FOCALLEN keyword — without them the solver assumes 1000mm and 7.4um pixels and usually fails.',
       input_schema: {
         type: 'object',
         properties: {
           view_id: { type: 'string', description: 'View ID to plate solve' },
-          center_ra: { type: 'number', description: 'Approximate RA in degrees (optional, helps solver converge faster)' },
-          center_dec: { type: 'number', description: 'Approximate Dec in degrees (optional)' },
-          pixel_scale: { type: 'number', description: 'Pixel scale in arcsec/pixel (optional, default auto-detect)' }
+          focal_length_mm: { type: 'number', description: 'Telescope focal length in mm. Overrides the FOCALLEN keyword.' },
+          pixel_size_um: { type: 'number', description: 'Sensor pixel pitch in microns. Overrides the XPIXSZ keyword.' },
+          magnitude: { type: 'number', description: 'Limiting catalogue magnitude. Omit to let the solver choose.' },
+          online: { type: 'boolean', description: 'Query VizieR instead of a local Gaia database. Default false.' }
         },
         required: ['view_id']
       }
     },
     handler: async (ctx, _store, _brief, input) => {
-      const centerRA = input.center_ra !== undefined ? `P.centerRA = ${input.center_ra};` : '';
-      const centerDec = input.center_dec !== undefined ? `P.centerDec = ${input.center_dec};` : '';
-      const pixelScale = input.pixel_scale !== undefined ? `P.resolution = ${input.pixel_scale}; P.autoResolution = false;` : 'P.autoResolution = true;';
-      const r = await ctx.pjsr(`
-        var P = new ImageSolver;
-        ${centerRA}
-        ${centerDec}
-        ${pixelScale}
-        P.catalogMode = ImageSolver.DataRelease;
-        P.catalog = ImageSolver.GaiaDR3;
-        P.distortionCorrection = true;
-        P.projectionSystem = ImageSolver.Gnomonic;
-        P.executeOn(ImageWindow.windowById('${input.view_id}').mainView);
-        'OK';
-      `);
-      if (r.status === 'error') {
-        return { type: 'text', text: `Plate solve failed: ${r.error?.message}. The image may need better initial coordinates or more stars.` };
+      const known = await readAstrometry(ctx, input.view_id);
+      if (known.hasSolution) {
+        return { type: 'text', text: `${input.view_id} already carries an astrometric solution; nothing to do.` };
       }
-      return { type: 'text', text: 'Plate solve complete. Astrometric solution added to image.' };
+      const result = await plateSolve(ctx, input.view_id, {
+        focalLengthMm: input.focal_length_mm ?? known.focalLengthMm,
+        pixelSizeUm: input.pixel_size_um ?? known.pixelSizeUm,
+        magnitude: input.magnitude,
+        online: input.online === true,
+      });
+      if (!result.solved) {
+        const hint = (input.focal_length_mm ?? known.focalLengthMm)
+          ? 'Try a wider limiting magnitude, or online: true if no local Gaia database is installed.'
+          : 'The image has no FOCALLEN keyword and none was supplied, so the solver used its 1000mm default. Pass focal_length_mm.';
+        return { type: 'text', text: `Plate solve failed: ${result.detail}. ${hint}` };
+      }
+      return { type: 'text', text: `Plate solve complete: ${result.detail}. ${result.summary}` };
     }
   },
 
