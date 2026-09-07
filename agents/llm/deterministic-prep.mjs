@@ -478,7 +478,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     const solve = await plateSolve(ctx, targetName, {
       focalLengthMm,
       pixelSizeUm,
-      catalog: optics.catalog || 'GaiaDR3',
+      catalog: optics.catalog,   // omitted: the solver picks for the field
     });
     log('  Plate solve: ' + (solve.solved ? 'SUCCESS — ' + solve.detail
                                           : 'FAILED — ' + solve.detail + ' (SPCC will be skipped)'));

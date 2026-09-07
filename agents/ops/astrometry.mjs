@@ -57,16 +57,20 @@ export async function readAstrometry(ctx, viewId) {
  * @param {object} opts
  *   focalLengthMm  telescope focal length; overrides FOCALLEN when given
  *   pixelSizeUm    sensor pixel pitch; overrides XPIXSZ when given
- *   catalog        'GaiaDR3' (default), 'GaiaEDR3' or 'GaiaDR2'
+ *   catalog        force a catalogue by its registry name — "GaiaDR3_XPSD",
+ *                  "GaiaEDR3_XPSD", "GaiaDR2_XPSD", "GaiaDR2", "TYCHO-2" or
+ *                  "Bright Stars". Omit it: the solver's automatic mode picks a
+ *                  local Gaia database when one is installed and an online
+ *                  catalogue sized to the field of view when none is.
  *   magnitude      limiting magnitude; omit to let the solver choose
- *   online         true to allow VizieR instead of a local Gaia database
+ *   online         true to force VizieR rather than a local Gaia database
  * @returns {{solved: boolean, detail: string, stars: number|null}}
  */
 export async function plateSolve(ctx, viewId, opts = {}) {
   const {
     focalLengthMm = null,
     pixelSizeUm = null,
-    catalog = 'GaiaDR3',
+    catalog = null,
     magnitude = null,
     online = false,
   } = opts;
@@ -92,8 +96,15 @@ export async function plateSolve(ctx, viewId, opts = {}) {
     var engine = new ImageSolver;
     engine.initialize(w, false);
 
-    engine.solverCfg.catalogMode = ${online ? 'CatalogMode.Online' : 'CatalogMode.LocalXPSDServer'};
-    engine.solverCfg.catalog = '${catalog}';
+    // Automatic is the mode that copes with an install that has no local Gaia
+    // database: it falls back to an online catalogue chosen for the field of
+    // view. Naming a catalogue explicitly needs its registry name — a plain
+    // "GaiaDR3" resolves to null and the solver then fails on a null catalogue.
+    engine.solverCfg.catalogMode = ${
+      catalog ? 'CatalogMode.LocalXPSDServer'
+              : online ? 'CatalogMode.Online'
+                       : 'CatalogMode.Automatic'};
+    ${catalog ? `engine.solverCfg.catalog = '${catalog}';` : ''}
     engine.solverCfg.distortionCorrection = true;
     // Nothing is watching a dialog here, and the star overlays would leave
     // stray windows open in the middle of a pipeline.
@@ -102,6 +113,12 @@ export async function plateSolve(ctx, viewId, opts = {}) {
     engine.solverCfg.showDistortion = false;
     engine.solverCfg.generateErrorImg = false;
     ${overrides.join('\n    ')}
+
+    if (engine.metadata.ra === null || engine.metadata.dec === null) {
+      throw new Error(
+        "The image carries no sky position. Plate solving needs RA and DEC " +
+        "keywords (or OBJCTRA/OBJCTDEC) to start from.");
+    }
 
     var beforeFocal = engine.metadata.focal;
     var beforeRes = engine.metadata.resolution;
@@ -118,7 +135,15 @@ export async function plateSolve(ctx, viewId, opts = {}) {
   `);
 
   if (r.status === 'error') {
-    return { solved: false, stars: null, detail: r.error.message, consoleLog: r.error.consoleOutput || '' };
+    const message = r.error.message;
+    // The solver reports a missing catalogue as a null-property assignment,
+    // several frames away from the name that could not be resolved.
+    const hint = /setting 'magMax'|Catalog error/.test(message)
+      ? ' The catalogue could not be resolved. Registry names carry a suffix — ' +
+        '"GaiaDR3_XPSD", not "GaiaDR3" — or omit the catalog option entirely and ' +
+        'let the solver choose.'
+      : '';
+    return { solved: false, stars: null, detail: message + hint, consoleLog: r.error.consoleOutput || '' };
   }
   const out = JSON.parse((r.outputs?.consoleOutput || '{}').trim());
   return {
