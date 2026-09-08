@@ -451,13 +451,19 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
   // Try: 1) copy from R master, 2) if no valid WCS, plate solve with ImageSolver
   log('  Copy WCS from R master...');
   const wcsResult = await ctx.pjsr(`
+    // 1.9.4 removed ImageWindow.astrometricSolution; reading it gives undefined
+    // rather than throwing, so a check against it always says "no solution".
+    function hasAstrometricSolution(w) {
+      try { var s = w.astrometricSolutionSummary(); return !!(s && s.length > 0); }
+      catch (e) { return false; }
+    }
     var src=ImageWindow.open('${F.R.replace(/'/g, "\\'")}')[0];
     var tgt=ImageWindow.windowById('${targetName}');
     var hasWCS = false;
     if(!src.isNull&&!tgt.isNull){
       tgt.mainView.beginProcess();
       tgt.keywords=src.keywords;
-      if(src.astrometricSolution){
+      if(hasAstrometricSolution(src)){
         tgt.copyAstrometricSolution(src,false);
         hasWCS = true;
       }
