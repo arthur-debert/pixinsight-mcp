@@ -218,6 +218,10 @@ async function main() {
   console.log('\n--- Phase 2+: Creative Agent via Claude Max ---');
 
   // Build system prompt
+  // The colour gate compares against what SPCC established; without this the
+  // baseline stays in the prep result and the gate has nothing to judge.
+  if (prepResult.colorBaseline) brief.colorBaseline = prepResult.colorBaseline;
+
   const systemPrompt = buildGigaOrchestratorPrompt(brief, config, prepResult.plan);
 
   // Creative agent gets all tools EXCEPT readiness (prep already done)

@@ -14,6 +14,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { getStats, measureUniformity } from '../ops/stats.mjs';
+import { measureStarColorBalance } from '../ops/quality-gates.mjs';
 import { setiStretch } from '../ops/stretch.mjs';
 import { runGC } from '../ops/gradient.mjs';
 import { createLumMask } from '../ops/masks.mjs';
@@ -568,6 +569,19 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     // BackgroundNeutralization below provides basic balance.
     log('  WARNING: SPCC failed (likely missing WCS). Falling back to background neutralization only.');
     log('  The agent can run run_spcc or manual color calibration later if needed.');
+  }
+
+  // Record what SPCC established, so drift away from it is measurable later.
+  // Without a baseline the colour gate has nothing to compare against, and the
+  // calibration is defended by nothing at all.
+  if (spccOut.includes('SPCC_OK')) {
+    try {
+      result.colorBaseline = await measureStarColorBalance(ctx, targetName);
+      log(`  Colour baseline: blue/red ${result.colorBaseline.blueRed?.toFixed(3)} ` +
+          `(R ${result.colorBaseline.r?.toFixed(3)} G ${result.colorBaseline.g?.toFixed(3)} B ${result.colorBaseline.b?.toFixed(3)})`);
+    } catch (e) {
+      log(`  Colour baseline not recorded: ${e.message}`);
+    }
   }
   }  // end: SPCC only runs when its curves resolved
 

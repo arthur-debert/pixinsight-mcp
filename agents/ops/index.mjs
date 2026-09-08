@@ -11,7 +11,7 @@ export { cloneImage, restoreFromClone, closeImage, purgeUndoHistory, toViewId } 
 export { saveCheckpoint, loadCheckpoint } from './checkpoint.mjs';
 export { plateSolve, readAstrometry, copyAstrometryFromFile } from './astrometry.mjs';
 export { launch, terminatePixInsight, ensureBridgeDirectories, PI_BIN, WATCHER_PATH, BRIDGE_DIR, STDOUT_LOG } from './pixinsight.mjs';
-export { checkStarQuality, checkRinging, checkSharpness, checkCoreBurning, scanBurntRegions, checkSaturation, checkTonalPresence, checkStarLayerIntegrity, checkBrightChroma, checkHighlightTexture } from './quality-gates.mjs';
+export { checkStarQuality, checkRinging, checkSharpness, checkCoreBurning, scanBurntRegions, checkSaturation, checkTonalPresence, checkStarLayerIntegrity, checkBrightChroma, checkHighlightTexture, measureStarColorBalance, checkColorCalibration } from './quality-gates.mjs';
 export { measureSubjectDetail, locateSubjectROI } from './subject-metrics.mjs';
 export { multiScaleEnhance, shellDetailEnhance } from './compound-enhance.mjs';
 export { extractPseudoOIII, continuumSubtractHa, dynamicNarrowbandBlend, createSyntheticLuminance, createZoneMasks, createAdaptiveZoneMasks, continuousClamp } from './narrowband-enhance.mjs';

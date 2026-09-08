@@ -1623,3 +1623,81 @@ export async function checkBrightChroma(ctx, viewId, brightnessThreshold = 0.50)
     details,
   };
 }
+
+/**
+ * Measure the white balance of the STAR POPULATION.
+ *
+ * SPCC establishes a white balance from Gaia spectra, and then nothing defends
+ * it. Every gate here checks brightness, sharpness or saturation; none checks
+ * colour. On NGC 2808 that let an agent walk a calibrated blue/red of 0.987 back
+ * to 0.670 over about a hundred tool calls with every gate green the whole way.
+ *
+ * The mechanism is ordinary and easy to miss: a single curve applied to R, G and
+ * B on a NON-LINEAR image does not preserve channel ratios. A shadow pulldown
+ * mapping 0.10 to 0.06 leaves a star's red at 0.30 and drags its blue from 0.20
+ * to 0.17. Each such operation reddens the population a little.
+ *
+ * Blue/red across bright, unsaturated pixels is the statistic that catches it —
+ * it tracks the cluster's actual stellar populations, which is why a metal-poor
+ * cluster with a blue horizontal branch measures near 1.0 while a metal-rich one
+ * measures near 0.95.
+ */
+export async function measureStarColorBalance(ctx, viewId) {
+  const r = await ctx.pjsr(`
+    var w = ImageWindow.windowById('${viewId}');
+    if (w.isNull) throw new Error('measureStarColorBalance: view not found: ${viewId}');
+    var img = w.mainView.image;
+    if (!img.isColor) { JSON.stringify({ mono: true }); }
+    else {
+      var W = img.width, H = img.height;
+      var L = new Image(W, H, 1, ColorSpace.Gray); img.getLuminance(L);
+      var bg = L.median();
+      var rs = [], gs = [], bs = [], br = [];
+      for (var y = 0; y < H; y += 4) for (var x = 0; x < W; x += 4) {
+        var l = L.sample(x, y);
+        // Bright enough to be a star, below the range where clipping distorts hue.
+        if (l < bg * 8 || l > 0.85) continue;
+        var R = img.sample(x,y,0), G = img.sample(x,y,1), B = img.sample(x,y,2);
+        var s = R + G + B; if (s <= 0) continue;
+        rs.push(R/s); gs.push(G/s); bs.push(B/s); br.push(B/(R + 1e-6));
+      }
+      function pc(a, q) { a.sort(function(p,r){return p-r;}); return a.length ? a[Math.floor(a.length*q)] : 0; }
+      JSON.stringify({ mono: false, n: rs.length,
+        r: pc(rs,0.5), g: pc(gs,0.5), b: pc(bs,0.5),
+        blueRed: pc(br,0.5), blueRedP10: pc(br,0.10), blueRedP90: pc(br,0.90) });
+    }
+  `);
+  if (r.status === 'error') throw new Error(`measureStarColorBalance: ${r.error?.message}`);
+  return JSON.parse(r.outputs?.consoleOutput ?? '{}');
+}
+
+/**
+ * Fail when the image has drifted away from the white balance SPCC established.
+ *
+ * @param baseline - measureStarColorBalance() taken right after SPCC
+ * @param tolerance - fractional drift allowed in blue/red. 0.12 passes ordinary
+ *   saturation work and catches the cumulative reddening that shared-channel
+ *   curves produce.
+ */
+export async function checkColorCalibration(ctx, viewId, baseline, tolerance = 0.12) {
+  const now = await measureStarColorBalance(ctx, viewId);
+  if (now.mono) return { pass: true, mono: true, detail: 'mono image; no colour balance to check' };
+  if (!baseline || !baseline.blueRed) {
+    return { pass: true, advisory: true, now,
+      detail: `No post-SPCC baseline recorded, so drift cannot be judged. Current blue/red ${now.blueRed.toFixed(3)}.` };
+  }
+
+  const drift = (now.blueRed - baseline.blueRed) / baseline.blueRed;
+  const pass = Math.abs(drift) <= tolerance;
+  const direction = drift < 0 ? 'redder' : 'bluer';
+  return {
+    pass, now, baseline, drift,
+    detail: pass
+      ? `Colour holds: blue/red ${now.blueRed.toFixed(3)} against the calibrated ${baseline.blueRed.toFixed(3)} (${(drift*100).toFixed(1)}%).`
+      : `FAIL — colour has drifted ${Math.abs(drift*100).toFixed(0)}% ${direction} than SPCC calibration: ` +
+        `blue/red ${now.blueRed.toFixed(3)} against ${baseline.blueRed.toFixed(3)}. ` +
+        `The usual cause is one curve applied to R, G and B together on a non-linear image: that does not ` +
+        `preserve channel ratios, and each shadow pulldown reddens the stars. Apply per-channel curves, or ` +
+        `work in a way that keeps ratios, and re-check.`,
+  };
+}

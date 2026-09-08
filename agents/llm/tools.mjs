@@ -16,6 +16,7 @@ import {
   multiScaleEnhance, shellDetailEnhance,
   extractPseudoOIII, continuumSubtractHa, dynamicNarrowbandBlend, createSyntheticLuminance, createZoneMasks, createAdaptiveZoneMasks, continuousClamp,
   plateSolve, readAstrometry,
+  checkColorCalibration,
 } from '../ops/index.mjs';
 import { checkHardConstraints, statsToScores, computeAggregate } from '../scoring.mjs';
 import { jpegToContentBlock } from './vision.mjs';
@@ -651,6 +652,31 @@ const TOOL_CATALOG = {
       const stats = await getStats(ctx, input.view_id);
       return { type: 'text', text: `SPCC complete. Channels now balanced: R=${stats.perChannel?.R?.median?.toFixed(6)}, G=${stats.perChannel?.G?.median?.toFixed(6)}, B=${stats.perChannel?.B?.median?.toFixed(6)} (median=${stats.median.toFixed(6)})` };
     }
+  },
+
+  check_color_calibration: {
+    category: 'quality_gate',
+    definition: {
+      name: 'check_color_calibration',
+      description:
+        'Check that the image still carries the white balance SPCC established from Gaia spectra. ' +
+        'Run it after any colour or tonal work, and before finishing. A single curve applied to R, G and B ' +
+        'together on a non-linear image does NOT preserve channel ratios — each shadow pulldown reddens the ' +
+        'stars a little, and enough of them silently undo the calibration while every other gate stays green.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          view_id: { type: 'string', description: 'View to check' },
+          tolerance: { type: 'number', description: 'Fractional blue/red drift allowed. Default 0.12.' },
+        },
+        required: ['view_id'],
+      },
+    },
+    handler: async (ctx, _store, brief, input) => {
+      const baseline = brief?.colorBaseline ?? null;
+      const r = await checkColorCalibration(ctx, input.view_id, baseline, input.tolerance ?? 0.12);
+      return { type: 'text', text: `[COLOUR CALIBRATION: ${r.pass ? 'PASS' : 'FAIL'}] ${r.detail}` };
+    },
   },
 
   run_plate_solve: {

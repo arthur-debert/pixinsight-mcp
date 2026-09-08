@@ -489,6 +489,22 @@ Tools: create_luminance_mask (inverted=true), apply_mask, run_curves, run_pixelm
 
 ## BRANCH C — COLOR RICHNESS
 
+**Prep calibrated this image with SPCC against Gaia spectra. Do not undo that.**
+
+A single curve applied to R, G and B together does NOT preserve channel ratios on
+a non-linear image. A shadow pulldown mapping 0.10 to 0.06 leaves a star's red at
+0.30 and drags its blue from 0.20 to 0.17 — each one reddens the star population
+a little, and enough of them walk the calibration away entirely while every other
+gate stays green.
+
+- Use per-channel curves when you mean to change colour, and say which channel.
+- For tonal work that must not touch colour, operate on luminance, or use an
+  expression that scales all three channels by the same factor.
+- Call \`check_color_calibration\` after colour or tonal work, and before finish.
+  It compares the star population's blue/red against the post-SPCC baseline.
+
+
+
 Work on RGB. Goal: VIVID, bold color — especially on the subject.
 
 Required candidates: color_restrained, color_target, color_bold, color_overdone
