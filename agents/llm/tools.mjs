@@ -683,7 +683,7 @@ const TOOL_CATALOG = {
     category: 'calibration',
     definition: {
       name: 'run_plate_solve',
-      description: 'Add an astrometric solution (WCS) to an image with ImageSolver. Required before SPCC, and after BlurXTerminator, which strips the solution. Give focal_length_mm and pixel_size_um when the image has no FOCALLEN keyword — without them the solver assumes 1000mm and 7.4um pixels and usually fails.',
+      description: 'Add an astrometric solution (WCS) to an image with ImageSolver. Required before SPCC. Solve the per-channel masters rather than the combined colour image: it is cheaper, and a dense field is far harder to solve once the channels are merged. Note that BlurXTerminator, GradientCorrection and NoiseXTerminator all PRESERVE an existing solution on 1.9.4 — none of them changes the pixel grid — so re-solving after them is wasted work. Give focal_length_mm and pixel_size_um when the image has no FOCALLEN keyword — without them the solver assumes 1000mm and 7.4um pixels and usually fails.',
       input_schema: {
         type: 'object',
         properties: {
@@ -721,7 +721,7 @@ const TOOL_CATALOG = {
     category: 'calibration',
     definition: {
       name: 'copy_astrometric_solution',
-      description: 'Copy the astrometric solution (WCS) from a source image to a target image. Use this after BXT which is known to strip WCS data. The source should be an original master file that was plate-solved during stacking.',
+      description: 'Copy the astrometric solution (WCS) from a source image to a target image. Use it when a process has dropped a solution the image should still have — copying costs nothing, where re-solving costs minutes and may not converge on a dense field. A solution only becomes INVALID when the pixel grid changes: StarAlignment, Crop, Resample, Rotation. After those, solve again rather than copying.',
       input_schema: {
         type: 'object',
         properties: {

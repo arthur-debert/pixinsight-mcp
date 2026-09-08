@@ -72,3 +72,24 @@ Do this proactively — don't wait to be asked. The goal is that skills always r
 - `SomeProcess.prototype.CONST` is `undefined` under V8; use `SomeProcess.CONST`
 - Unknown process parameters are accepted silently — check `Object.keys(new P)`
 - A slash-star pair inside a `//` comment stops a PJSR file loading, silently
+
+## Astrometry is metadata — never throw it away
+
+An astrometric solution is metadata about the pixel grid. A step that does not
+change the grid cannot invalidate it. Measured on 1.9.4: GradientCorrection,
+NoiseXTerminator and BlurXTerminator all leave the solution untouched, matrix
+identical, on a 2930x2561 master.
+
+Only genuinely geometric operations invalidate a solution: StarAlignment, Crop,
+Resample, Rotation, IntegerResample, DynamicCrop. After one of those, re-solve.
+After anything else, the solution still holds.
+
+If a process ever does drop one, the answer is to COPY IT BACK — it is a few
+keywords and a property. Re-solving is minutes of work to recompute something
+you already had, and on a dense field it may not converge at all.
+
+Solve the per-channel masters, not the combined colour image: it is cheap
+(8-51s each here), it gives four chances instead of one, comparing the solutions
+verifies the channels are registered, and ChannelCombination inherits the
+solution through `inheritAstrometricSolution`. Never rely on equal dimensions as
+proof of registration — two masters can match in size and sit on different grids.

@@ -84,7 +84,7 @@ Skip the GC-vs-ABE shootout — it costs turns and GC is reliable. Only try ABE 
 Run \`run_bxt\` with correct_only=true, adjust_star_halos=0.0 on the target. One pass.
 
 ## A4. WCS copy — Restore astrometric solution
-BXT strips the WCS. Use \`copy_astrometric_solution\` to copy from the original R master back to the target.
+BXT preserves the WCS — it does not change the pixel grid. Only StarAlignment, Crop, Resample and Rotation invalidate a solution.
 
 ## A5. SPCC — Spectrophotometric Color Calibration
 Run \`run_spcc\`. If it fails, fall back to SCNR (amount=0.65).

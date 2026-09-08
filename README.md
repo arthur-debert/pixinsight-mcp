@@ -208,7 +208,7 @@ DETERMINISTIC PREP (Phase 1, ~10-15 min first run, cached thereafter):
   --> combine RGB channels
   --> gradient correction (GC or ABE, auto-selected)
   --> BXT correct_only (deconvolution)
-  --> copy astrometric solution back (BXT strips WCS)
+  --> astrometric solution carries through (BXT does not change the pixel grid)
   --> SPCC color calibration
   --> background neutralization
   --> NXT linear denoise (0.20)

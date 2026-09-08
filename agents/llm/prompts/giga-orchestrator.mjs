@@ -100,7 +100,9 @@ You must behave like a disciplined director:
 - stretch_stars only for linear star layers
 - StarXTerminator early when starless processing needed
 - SPCC for galaxy color when WCS available
-- copy_astrometric_solution after BXT if WCS stripped
+- copy_astrometric_solution when a step dropped a solution the image should still have.
+  BXT, GC and NXT all preserve it — they do not change the pixel grid. Only
+  StarAlignment, Crop, Resample and Rotation invalidate a solution.
 - Masks for LHE and HDRMT always
 - star_protected_blend for star reintegration (replaces star_screen_blend — auto core protection)
 - check_star_layer_integrity BEFORE any star blend (precondition)
@@ -336,7 +338,7 @@ Skip directly to Phase 2.
 5. Linear processing on combined RGB:
    - run_gradient_correction
    - run_bxt (correct_only=true)
-   - copy_astrometric_solution (restore WCS stripped by BXT)
+   - the astrometric solution carries through BXT unchanged; nothing to restore
    - run_spcc (color calibration)
    - run_background_neutralization
    - run_nxt (denoise=0.20, gentle)
