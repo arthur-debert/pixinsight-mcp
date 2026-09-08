@@ -21,6 +21,7 @@ import { savePreview } from '../ops/preview.mjs';
 import { cloneImage, closeImage, purgeUndoHistory, toViewId } from '../ops/image-mgmt.mjs';
 import { plateSolve, readAstrometry } from '../ops/astrometry.mjs';
 import { buildPrepPlan, describePrepPlan } from '../prep-plan.mjs';
+import { resolveSpccCurves } from '../ops/spcc-filters.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const CACHE_DIR = path.join(os.homedir(), '.pixinsight-mcp', 'prep-cache');
@@ -503,21 +504,36 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
                                           : 'FAILED — ' + solve.detail + ' (SPCC will be skipped)'));
   }
 
-  // SPCC with equipment-specific filters + QE from equipment.json
+  // SPCC filters and sensor QE. These belong with the DATA — one folder is a
+  // CHI-1 CCD, the next may be a CMOS on a different scope — so the per-target
+  // config wins over the global equipment.json.
   const equipPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../equipment.json');
   let equipConfig = {};
   if (fs.existsSync(equipPath)) {
     equipConfig = JSON.parse(fs.readFileSync(equipPath, 'utf-8')).spcc || {};
   }
-  const filterSet = equipConfig.filterSet || 'Astronomik Deep Sky';
-  const sensorQE = equipConfig.sensorQE || 'Sony IMX411/455/461/533/571';
-  const whiteRef = equipConfig.whiteReference || 'Average Spiral Galaxy';
-  log(`  SPCC (${filterSet} + ${sensorQE})...`);
+  const spccConfig = { ...equipConfig, ...(config.spcc || {}) };
+  const filterSet = spccConfig.filterSet;
+  const sensorQE = spccConfig.sensorQE;
+  const whiteRef = spccConfig.whiteReference || 'Average Spiral Galaxy';
 
-  // Write curve data to temp file (too large for inline PJSR)
-  const spccCurvesModule = await import('../../scripts/spcc-curves.mjs');
+  // Curves come from PixInsight's own database, so the name and the curve can
+  // never disagree. Passing hardcoded curves alongside a configurable name is
+  // how this produced Astronomik numbers under an Astrodon label.
+  let spccCurves = null;
+  try {
+    spccCurves = resolveSpccCurves({ filterSet, sensorQE, whiteReference: whiteRef });
+    log(`  SPCC (${filterSet} + ${sensorQE}, curves from PixInsight's database)...`);
+  } catch (e) {
+    log(`  SPCC SKIPPED — ${e.message}`);
+  }
+
+  if (spccCurves) {
   const spccDataPath = '/tmp/spcc-curves-prep.json';
-  fs.writeFileSync(spccDataPath, JSON.stringify(spccCurvesModule.default));
+  fs.writeFileSync(spccDataPath, JSON.stringify({
+    red: spccCurves.red, green: spccCurves.green, blue: spccCurves.blue,
+    qe: spccCurves.qe, whiteRef: (await import('../../scripts/spcc-curves.mjs')).default.whiteRef,
+  }));
 
   const spccR = await ctx.pjsr(`
     var json=File.readLines('${spccDataPath}').join('');
@@ -528,11 +544,11 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     P.whiteReferenceSpectrum=c.whiteRef;
     P.whiteReferenceName='${whiteRef}';
     P.redFilterTrCurve=c.red;
-    P.redFilterName='${filterSet} R';
+    P.redFilterName='${spccCurves.names.red}';
     P.greenFilterTrCurve=c.green;
-    P.greenFilterName='${filterSet} G';
+    P.greenFilterName='${spccCurves.names.green}';
     P.blueFilterTrCurve=c.blue;
-    P.blueFilterName='${filterSet} B';
+    P.blueFilterName='${spccCurves.names.blue}';
     P.deviceQECurve=c.qe;
     P.deviceQECurveName='${sensorQE}';
     P.catalogId='GaiaDR3SP';
@@ -553,6 +569,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
     log('  WARNING: SPCC failed (likely missing WCS). Falling back to background neutralization only.');
     log('  The agent can run run_spcc or manual color calibration later if needed.');
   }
+  }  // end: SPCC only runs when its curves resolved
 
   // NXT linear (balanced — reduce noise while preserving faint detail)
   log('  NXT linear (0.30)...');
