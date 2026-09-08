@@ -706,7 +706,7 @@ export async function runDeterministicPrep(ctx, config, opts = {}) {
           var dx = Math.floor((img.width - ${rgbW}) / 2);
           var dy = Math.floor((img.height - ${rgbH}) / 2);
           if (dx > 0 || dy > 0) {
-            var P = new DynamicCrop;
+            var P = new DynamicCrop; P.noGUIMessages = true;
             P.centerX = 0.5; P.centerY = 0.5;
             P.width = ${rgbW} / img.width;
             P.height = ${rgbH} / img.height;

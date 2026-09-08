@@ -248,7 +248,7 @@ async function run() {
   if (haW !== rgbW || haH !== rgbH) {
     log('  DynamicCrop Ha (' + haW + 'x' + haH + ') -> (' + rgbW + 'x' + rgbH + ')...');
     await pjsr(`
-      var P = new DynamicCrop; P.centerX=0.5; P.centerY=0.5;
+      var P = new DynamicCrop; P.noGUIMessages = true; P.centerX=0.5; P.centerY=0.5;
       P.width=${rgbW}/${haW}; P.height=${rgbH}/${haH};
       P.executeOn(ImageWindow.windowById('${idHa}').mainView);
     `);
@@ -259,7 +259,7 @@ async function run() {
   if (lW !== rgbW || lH !== rgbH) {
     log('  DynamicCrop L (' + lW + 'x' + lH + ') -> (' + rgbW + 'x' + rgbH + ')...');
     await pjsr(`
-      var P = new DynamicCrop; P.centerX=0.5; P.centerY=0.5;
+      var P = new DynamicCrop; P.noGUIMessages = true; P.centerX=0.5; P.centerY=0.5;
       P.width=${rgbW}/${lW}; P.height=${rgbH}/${lH};
       P.executeOn(ImageWindow.windowById('${idL}').mainView);
     `);

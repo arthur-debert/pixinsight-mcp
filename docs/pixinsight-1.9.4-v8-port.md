@@ -119,7 +119,32 @@ The watcher exercises `CoreApplication.processEvents()`, `System.msleep()` and
 to `~/.pixinsight-mcp/bridge/logs/watcher-startup.log`, so a warning for anything
 the command loop depends on appears there rather than surfacing mid-run.
 
-### 7. Null replaced the "invalid" placeholder objects
+### 7. Automation mode does not stop every modal dialog
+
+PixInsight's own help is precise about this: automation mode works by "not
+showing **many** informative and warning messages". Many, not all.
+
+Six geometry processes carry their own `noGUIMessages` parameter, and it
+defaults to false:
+
+    Resample, Rotation, Crop, IntegerResample, FastRotation, DynamicCrop
+
+(`ImageIntegration` and `Debayer` have it too, already defaulting to true.)
+
+A modal dialog is the worst failure this bridge has. It blocks the event loop
+the watcher polls in, so the watcher stops answering, every later call times out,
+and **nothing on the Node side can dismiss it** — the automation waits for a
+human to click a button that may be on a machine nobody is watching. It looks
+exactly like a hang.
+
+Two defences. Every construction of those processes sets `noGUIMessages = true`,
+and `scripts/pjsr-audit-params.mjs` fails when one does not — it asks the running
+PixInsight which classes carry the parameter, so the rule cannot go stale against
+a future version. And when a watcher does go quiet while reporting itself idle,
+the bridge names a modal dialog as the likely cause rather than saying only that
+the loop stopped.
+
+### 8. Null replaced the "invalid" placeholder objects
 
 Accessors like `View.window` and `ImageWindow.mask` return `null` for invalid
 references instead of a placeholder object. Truthiness tests that used to be safe

@@ -452,7 +452,7 @@ async function run() {
         tmp.mainView.image.assign(img);
         tmp.mainView.endProcess();
         if (scale < 1) {
-          var R = new Resample;
+          var R = new Resample; R.noGUIMessages = true;
           R.mode = Resample.RelativeDimensions;
           R.xSize = scale; R.ySize = scale;
           R.absoluteMode = Resample.ForceWidthAndHeight;

@@ -23,6 +23,14 @@
 //
 //     node scripts/pjsr-audit-params.mjs scripts
 //
+// It also checks the other thing that can only be known by asking PixInsight:
+// which processes will pop a MODAL DIALOG unless told not to. Six geometry
+// processes carry a `noGUIMessages` parameter defaulting to false. A modal
+// dialog blocks the watcher's event loop, so every bridge call after it times
+// out and nothing on the Node side can dismiss it — the automation just stops,
+// waiting for a human to click a button. --automation-mode does not cover these;
+// PixInsight's own help says it suppresses "many" messages, not all.
+//
 // Usage: node scripts/pjsr-audit-params.mjs [--json] [paths...]
 
 import fs from 'fs';
@@ -32,6 +40,9 @@ import { ensureWatcher } from '../agents/mcp/preflight.mjs';
 
 // `var P = new BlurXTerminator` / `let SA = new StarAlignment;`
 const CONSTRUCTION = /\b(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*new\s+([A-Z][\w]*)\s*[;(\n]/g;
+// Re-scanned per file so a construction can be checked for its own safety
+// assignment rather than any assignment anywhere.
+const CONSTRUCTION_SCAN = new RegExp(CONSTRUCTION.source, 'g');
 // `P.correct_only = true;`  — an assignment, not a read or a method call.
 const ASSIGNMENT = /\b([A-Za-z_$][\w$]*)\.([a-zA-Z_$][\w$]*)\s*=(?!=)/g;
 
@@ -150,11 +161,47 @@ for (const a of assignments) {
   });
 }
 
+// A process that CAN pop a dialog and was not told not to.
+const dialogCapable = [...classNames].filter(c => Array.isArray(known[c]) && known[c].includes('noGUIMessages'));
+const dialogFindings = [];
+if (dialogCapable.length > 0) {
+  for (const root of targets) {
+    if (!fs.existsSync(root)) continue;
+    for (const file of walk(root)) {
+      if (path.resolve(file) === path.resolve(import.meta.filename)) continue;
+      const text = fs.readFileSync(file, 'utf-8');
+      for (const m of text.matchAll(CONSTRUCTION_SCAN)) {
+        const [, variable, processClass] = m;
+        if (!dialogCapable.includes(processClass)) continue;
+        // Look only at the block following this construction, so one safe
+        // assignment elsewhere in the file cannot vouch for a different one.
+        const next = text.indexOf('new ', m.index + m[0].length);
+        const block = text.slice(m.index, next === -1 ? text.length : next);
+        if (new RegExp(`\\b${variable}\\.noGUIMessages\\s*=\\s*true`).test(block)) continue;
+        dialogFindings.push({
+          file,
+          line: text.slice(0, m.index).split('\n').length,
+          processClass,
+          variable,
+          text: text.slice(m.index, text.indexOf('\n', m.index)).trim(),
+        });
+      }
+    }
+  }
+}
+
 const unresolved = [...classNames].filter(c => known[c] === null || known[c] === undefined);
 
 if (asJson) {
-  console.log(JSON.stringify({ checked: assignments.length, findings, unresolved }, null, 2));
+  console.log(JSON.stringify({ checked: assignments.length, findings, dialogFindings, unresolved }, null, 2));
 } else {
+  for (const f of dialogFindings) {
+    console.log(`\n${f.file}:${f.line}  [modal-dialog-risk]`);
+    console.log(`    ${f.processClass} pops a modal dialog unless noGUIMessages is set. A modal blocks`);
+    console.log(`    the watcher's event loop, so every later bridge call times out and nothing on the`);
+    console.log(`    Node side can dismiss it. Add: ${f.variable}.noGUIMessages = true;`);
+    console.log(`    > ${f.text}`);
+  }
   const byFile = new Map();
   for (const f of findings) {
     if (!byFile.has(f.file)) byFile.set(f.file, []);
@@ -171,7 +218,10 @@ if (asJson) {
   if (unresolved.length) {
     console.log(`Not PixInsight processes, skipped: ${unresolved.join(', ')}`);
   }
-  console.log(findings.length === 0 ? 'No unknown parameters.' : `${findings.length} finding(s).`);
+  console.log(findings.length === 0 ? 'No unknown parameters.' : `${findings.length} unknown-parameter finding(s).`);
+  console.log(dialogFindings.length === 0
+    ? `No modal-dialog risks (checked ${dialogCapable.length} dialog-capable class(es)).`
+    : `${dialogFindings.length} modal-dialog risk(s).`);
 }
 
-process.exit(findings.length === 0 ? 0 : 1);
+process.exit(findings.length === 0 && dialogFindings.length === 0 ? 0 : 1);

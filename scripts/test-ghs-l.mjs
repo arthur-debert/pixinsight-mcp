@@ -250,7 +250,7 @@ async function setup() {
   await pjsr(`
     var w = ImageWindow.windowById('L_test');
     var img = w.mainView.image;
-    var DC = new DynamicCrop;
+    var DC = new DynamicCrop; DC.noGUIMessages = true;
     DC.centerX = 0.5; DC.centerY = 0.5; DC.width = img.width - 30; DC.height = img.height - 30;
     DC.scaleX = 1; DC.scaleY = 1; DC.angle = 0;
     DC.executeOn(w.mainView);

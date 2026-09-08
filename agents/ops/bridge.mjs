@@ -98,7 +98,10 @@ export function watcherStatus(options = DEFAULT_HEARTBEAT) {
 
   if (age > HEARTBEAT_STALE_MS) {
     return { ok: false, reason: 'stale', heartbeat: hb,
-             detail: `The watcher last reported itself idle ${Math.round(age / 1000)}s ago and has not polled since. PixInsight is running but its script loop stopped.` };
+             detail: `The watcher last reported itself idle ${Math.round(age / 1000)}s ago and has not polled since. ` +
+                     `PixInsight is running but its script loop stopped. The usual cause is a modal dialog: ` +
+                     `it blocks the event loop the watcher polls in, and nothing on this side can dismiss it. ` +
+                     `Look at PixInsight and click it away, then check with: node scripts/pjsr-audit-params.mjs` };
   }
   return { ok: true, reason: hb.state, heartbeat: hb,
            detail: `Watcher v${hb.version} on core ${hb.coreVersion}, state ${hb.state}.` };

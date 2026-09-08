@@ -1365,7 +1365,7 @@ async function run() {
           const c = F.haAlignCrop;
           log('  Crop Ha (' + haW + 'x' + haH + ') -> (' + rgbW + 'x' + rgbH + ') using WBPPCROP...');
           await pjsr(`
-            var P = new Crop;
+            var P = new Crop; P.noGUIMessages = true;
             P.leftMargin = ${-c.left}; P.topMargin = ${-c.top};
             P.rightMargin = ${-c.right}; P.bottomMargin = ${-c.bottom};
             P.executeOn(ImageWindow.windowById('${idHa}').mainView);
@@ -1373,7 +1373,7 @@ async function run() {
         } else {
           log('  DynamicCrop Ha (' + haW + 'x' + haH + ') -> (' + rgbW + 'x' + rgbH + ')...');
           await pjsr(`
-            var P = new DynamicCrop; P.centerX=0.5; P.centerY=0.5;
+            var P = new DynamicCrop; P.noGUIMessages = true; P.centerX=0.5; P.centerY=0.5;
             P.width=${rgbW}/${haW}; P.height=${rgbH}/${haH};
             P.executeOn(ImageWindow.windowById('${idHa}').mainView);
           `);
@@ -1391,7 +1391,7 @@ async function run() {
       if (lW && lH && (lW !== rgbW || lH !== rgbH)) {
         log('  DynamicCrop L (' + lW + 'x' + lH + ') -> (' + rgbW + 'x' + rgbH + ')...');
         await pjsr(`
-          var P = new DynamicCrop; P.centerX=0.5; P.centerY=0.5;
+          var P = new DynamicCrop; P.noGUIMessages = true; P.centerX=0.5; P.centerY=0.5;
           P.width=${rgbW}/${lW}; P.height=${rgbH}/${lH};
           P.executeOn(ImageWindow.windowById('${idL}').mainView);
         `);
@@ -1785,7 +1785,7 @@ async function run() {
         var w = ImageWindow.windowById('${imgId}');
         var img = w.mainView.image;
         var ow = Math.round(img.width), oh = Math.round(img.height);
-        var P = new DynamicCrop;
+        var P = new DynamicCrop; P.noGUIMessages = true;
         P.centerX = 0.5; P.centerY = 0.5;
         P.width = (ow - 2*${cropEdge}) / ow;
         P.height = (oh - 2*${cropEdge}) / oh;
