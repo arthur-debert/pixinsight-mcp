@@ -73,6 +73,26 @@ Do this proactively — don't wait to be asked. The goal is that skills always r
 - Unknown process parameters are accepted silently — check `Object.keys(new P)`
 - A slash-star pair inside a `//` comment stops a PJSR file loading, silently
 
+## Guard property access — JavaScript will not
+
+Every PJSR snippet runs with two helpers the watcher defines:
+
+```js
+var P = configure(new PixelMath, "PixelMath", { expression: "0.5", createNewImage: false });
+P.executeOn(view);                       // the object is raw; methods work normally
+
+var s = prop(w, "ImageWindow", "mainView");   // throws if the property is gone
+```
+
+`configure` refuses a parameter the process does not have, and refuses a value
+that arrived as `undefined` — which is what a legacy `X.prototype.CONST` reads
+as. `prop` refuses a property this version removed. Both fail loudly where plain
+JavaScript is silent.
+
+Do NOT wrap a process in a Proxy. Calling a native method through one hands the
+receiver a proxy and crashes PixInsight; returning a bound copy violates a Proxy
+invariant on read-only methods. Both were measured.
+
 ## Astrometry is metadata — never throw it away
 
 An astrometric solution is metadata about the pixel grid. A step that does not

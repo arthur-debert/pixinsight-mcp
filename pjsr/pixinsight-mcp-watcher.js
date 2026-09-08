@@ -102,6 +102,53 @@ function getTimestamp() {
 }
 
 // ============================================================================
+// Guarded property access
+// ============================================================================
+//
+// JavaScript answers a question nobody asked: read a property that does not
+// exist and you get undefined, write one and it is accepted. Against a native
+// API that changes between versions, that turns every removal into silence.
+// Five separate failures in this codebase were exactly that shape:
+//
+//   ImageWindow.astrometricSolution   removed in 1.9.4, read as undefined, so
+//                                     every "is it solved?" check said no
+//   SomeProcess.prototype.CONST       reads as undefined, and assigning that to
+//                                     a parameter throws only "undefined"
+//   P.scalingFunctionNoiseLayers      no such parameter; accepted and ignored
+//   P.AI_file / P.device              likewise
+//   P.channelL on LRGBCombination     likewise
+//
+// A Proxy would catch reads and writes together, but calling a native method
+// through one hands the receiver a proxy and takes the whole application down,
+// and returning a bound copy violates a Proxy invariant on read-only methods.
+// So: guard the writes, read through prop(), and leave the object itself raw.
+
+// Set parameters on a process, refusing anything it does not have and anything
+// that arrived as undefined. Returns the process, unwrapped, so executeOn works.
+function configure(target, name, params) {
+   for (var k in params) {
+      if (!(k in target))
+         throw new Error(name + ' has no parameter "' + k + '". PixInsight would accept the ' +
+                         'assignment and ignore it, so the process would run with a different ' +
+                         'configuration than this code appears to request.');
+      if (params[k] === undefined)
+         throw new Error(name + "." + k + " was assigned undefined. A legacy enumeration such as " +
+                         name + ".prototype.CONST reads as undefined under the V8 runtime; use " +
+                         name + ".CONST instead.");
+      target[k] = params[k];
+   }
+   return target;
+}
+
+// Read a property, refusing one this PixInsight version does not have.
+function prop(obj, name, key) {
+   if (!(key in obj))
+      throw new Error(name + ' has no property "' + key + '" in this PixInsight version. ' +
+                      "Reading it would yield undefined and every test against it would quietly fail.");
+   return obj[key];
+}
+
+// ============================================================================
 // Heartbeat
 // ============================================================================
 
